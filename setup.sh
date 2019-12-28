@@ -98,7 +98,6 @@ function addToAptInstall {
 }
 
 addToAptInstall "python-requests"
-addToAptInstall "python-gobject-2"
 addToAptInstall "python-dbus"
 addToAptInstall "python-tk"
 addToAptInstall "python-pexpect"
