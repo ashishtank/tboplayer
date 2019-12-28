@@ -47,7 +47,7 @@ if [ "$1" == "uninstall" ]; then
         if [ "$answer" == "Y" ] || [ "$answer" == "y" ]; then
             echo ""
             echo "* Removing TBOPlayer dependencies..."
-            sudo apt-get -y remove python-gobject-2 python-dbus python-tk python-gtk2 python-requests python-magic python-pexpect tkdnd >/dev/null 2>&1
+            sudo apt-get -y remove python-gi python-dbus python-tk python-gtk2 python-requests python-magic python-pexpect tkdnd >/dev/null 2>&1
             sudo rm -f /usr/local/bin/youtube-dl >/dev/null 2>&1
         fi
         echo ""
@@ -123,17 +123,17 @@ function installYoutubedl {
     sudo chmod a+rx $YTDL_EXPECTED_PATH
 }
 
-dpkg -l tkdnd >/dev/null 2>&1
-if [ $? -eq 1 ] ; then
-    echo "* Compiling tkdnd..."
-    sudo apt-get install -y build-essential tcl-dev tk-dev >/dev/null
-    wget https://github.com/petasis/tkdnd/tarball/master -O - | tar xz >/dev/null 2>&1
-    cd petasis-tkdnd-*
-    ./configure >/dev/null 2>&1
-    make >/dev/null 2>&1
-    sudo make install >/dev/null 2>&1
-    cd ..
-fi
+#dpkg -l tkdnd >/dev/null 2>&1
+#if [ $? -eq 1 ] ; then
+#    echo "* Compiling tkdnd..."
+#    sudo apt-get install -y build-essential tcl-dev tk-dev >/dev/null
+#    wget https://github.com/petasis/tkdnd/tarball/master -O - | tar xz >/dev/null 2>&1
+#    cd petasis-tkdnd-*
+#    ./configure >/dev/null 2>&1
+#    make >/dev/null 2>&1
+#    sudo make install >/dev/null 2>&1
+#    cd ..
+#fi
 
 # install youtube-dl it's if not installed
 YTDL_PATH="$( command -v youtube-dl )"
