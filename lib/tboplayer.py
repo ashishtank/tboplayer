@@ -1,67 +1,7 @@
-
-"""
-A GUI interface using jbaiter's pyomxplayer to control omxplayer
-
-INSTALLATION
-***
-  *  TBOPlayer requires avconv, youtube-dl, and also the python libraries requests, gobject2, gtk2, pexpect and ptyprocess to be installed in order to work.
-  *
-  *  -------------------------
-  *
-  *  To install TBOPlayer and all required libraries, you can simply use the following command from tboplayer directory:
-  *
-  *      chmod +x setup.sh 
-  *      ./setup.sh
-  *
-  *  -------------------------
-  *
-  *  See README.md file for more details on installation
-  *  
-  
-OPERATION
-Menus
-====
- Track - Track - add tracks (for selecting multiple tracks, hold ctrl when clicking) or directories or URLs, edit or remove tracks from the current playlist
- Playlist - save the current playlist or open a saved one or load youtube playlist
- OMX - display the track information for the last played track (needs to be enabled in options)
- Options -
-    Audio Output - play sound to hdmi or local output, auto does not send an audio option to omxplayer.
-    Mode - play the Single selected track, Repeat the single track, rotate around the Playlist starting from the selected track, randomly play a track from the Playlist.
-    Initial directory for tracks - where Add Track starts looking.
-    Initial directory for playlists - where Open Playlist starts looking
-    Enable subtitles
-    OMXPlayer location - path to omxplayer binary
-    OMXplayer options - add your own (no validation so be careful)
-    Download from Youtube - defines whether to download video and audio or audio only from Youtube (other online video services will always be asked for "video and audio")
-    Download actual media URL [when] - defines when to extract the actual media from the given URL, either upon adding the URL or when playing it
-    Youtube video quality - lets you choose between "small", "medium" and "high" qualities (Youtube only feature)
-    youtube-dl location - path to youtube-dl binary
-    Start/End track paused - Pauses the track both in the beginning and in the end of the track
-    Autoplay on start up - If TBOPlayer has just been opened and has some file in the playlist, automatically satrt playing the first file in the list
-    Forbid windowed mode - if enabled will make videos always show in full screen, disabling the video window mode and video progress bar - useful if you're using tboplayer through a remote desktop
-    Debug - prints some debug text to the command line
-
-  *  See README.md file for more details on operation in the OPERATION section
-
-TODO (maybe)
---------
-sort out black border around some videos
-gapless playback, by running two instances of pyomxplayer
-read and write m3u and pls playlists
-
-
-PROBLEMS
----------------
-I think I might have fixed this but two tracks may play at the same time if you use the controls quickly, you may need to SSH in form another computer and use top -upi and k to kill the omxplayer.bin
-
-"""
-
 from options import *
 from ytdl import *
 from omxplayer import *
 from playlist import *
-from dnd import *
-from dbusinterface import *
 from htmlparsers import *
 from scrolledframe import *
 from debugging import *
@@ -72,20 +12,24 @@ from pprint import ( pformat, pprint )
 from random import randint
 from math import log10
 from magic import from_file
+import sys
 import gettext
 import json
 import re
 import string
-import sys
+import configparser
 
-from Tkinter import *
-from ttk import ( Progressbar, Style, Sizegrip )
-from gtk.gdk import ( screen_width, screen_height )
-import Tkinter as tk
-import tkFileDialog
-import tkMessageBox
-import tkSimpleDialog
-import tkFont
+from tkinter import *
+from tkinter.ttk import ( Progressbar, Style, Sizegrip )
+import tkinter as tk
+from tkinter import (
+    filedialog,
+    messagebox,
+    simpledialog,
+    font
+)
+
+datestring = "27 Dec 2019"
 
 options = Options()
 
@@ -304,7 +248,7 @@ class TBOPlayer:
 
 
     # respond to asynchrous user input and send signals if necessary
-    def play_track(self):
+    def play_track(self, *args, **kwargs):
         """ respond to user input to play a track, ignore it if already playing
               needs to start playing and not send a signal as it is this that triggers the state machine.
         """
@@ -333,7 +277,7 @@ class TBOPlayer:
         self.root.after(1200, play_after)
 
 
-    def skip_to_next_track(self):
+    def skip_to_next_track(self, *args, **kwargs):
         # send signals to stop and then to play the next track
         if self.play_state == self._OMX_PLAYING:
             self.monitor(">skip  to next received") 
@@ -342,7 +286,7 @@ class TBOPlayer:
             self.play_next_track_signal=True
         
 
-    def skip_to_previous_track(self):
+    def skip_to_previous_track(self, *args, **kwargs):
         # send signals to stop and then to play the previous track
         if self.play_state == self._OMX_PLAYING:
             self.monitor(">skip  to previous received")
@@ -351,7 +295,7 @@ class TBOPlayer:
             self.play_previous_track_signal=True
 
 
-    def stop_track(self):
+    def stop_track(self, *args, **kwargs):
         # send signals to stop and then to break out of any repeat loop
         if self.play_state == self._OMX_PLAYING:
             self.monitor(">stop received")
@@ -384,7 +328,7 @@ class TBOPlayer:
 
 
     def volminusplus(self, event):
-        if event.x < event.widget.winfo_width()/2:
+        if int(event[0][8]) < self.minusplus_button.winfo_width()/2:
             self.volminus()
         else:
             self.volplus()
@@ -402,7 +346,6 @@ class TBOPlayer:
 
 
     def what_next(self):
-
         if self.break_required_signal==True:
             self.hide_progress_bar()
             self.monitor("What next, break_required so exit")
@@ -594,12 +537,12 @@ class TBOPlayer:
     def ytdl_update_messages_loop(self):
         if not self.ytdl.updating_signal:
             if self.ytdl.updated_signal:
-                tkMessageBox.showinfo("",_("youtube-dl has been updated."))
+                messagebox.showinfo("",_("youtube-dl has been updated."))
             elif self.ytdl.update_failed_signal:
-                tkMessageBox.showinfo("",_("Failed to update youtube-dl."))
+                messagebox.showinfo("",_("Failed to update youtube-dl."))
         else:
             if self.ytdl.password_requested_signal and not self.ytdl.has_password_signal:
-                password = tkSimpleDialog.askstring("", _("youtube-dl needs to be updated.\nPlease inform your password."), parent=self.root, show="*")
+                password = simpledialog.askstring("", _("youtube-dl needs to be updated.\nPlease inform your password."), parent=self.root, show="*")
                 if password: self.ytdl.set_password(password)
                 else: return
                     
@@ -702,7 +645,7 @@ class TBOPlayer:
 # INIT
 # ***************************************
 
-    def __init__(self, options):
+    def __init__(self):
 
         # initialise options class and do initial reading/creation of options
         self.options=options
@@ -718,7 +661,7 @@ class TBOPlayer:
 
         # start and configure ytdl object
         self.ytdl = Ytdl(self.options, 
-                         lambda: tkMessageBox.showinfo("",_("youtube-dl binary is not in the path configured in the Options, please check your configuration")))
+                         lambda: messagebox.showinfo("",_("youtube-dl binary is not in the path configured in the Options, please check your configuration")))
 
         #create the internal playlist
         self.playlist = PlayList(self.YTDL_WAIT_TAG)
@@ -726,6 +669,7 @@ class TBOPlayer:
         #root is the Tkinter root widget
         self.root = tk.Tk()
         self.root.title("GUI for OMXPlayer")
+        self.root.wm_protocol("WM_DELETE_WINDOW", self.shutdown)
 
         self.root.configure(background='grey')
         # width, height, xoffset, yoffset
@@ -846,6 +790,7 @@ class TBOPlayer:
                               foreground='black', background='light grey')
         minusplus_button.grid(row=7, column=5, sticky=N+W+E+S)#, sticky=E)
         minusplus_button.bind("<ButtonRelease-1>", self.volminusplus)
+        self.minusplus_button = minusplus_button
 
         # define display of file that is selected
         Label(self.root, font=('Comic Sans', 10),
@@ -924,34 +869,34 @@ class TBOPlayer:
                 self.select_track(False)
             self.play_track()
 
-        self.dnd = DnD(self.root)
-        self.dnd.bindtarget(self.root, 'text/uri-list', '<Drop>', self.add_drag_drop)    
+        #self.dnd = DnD(self.root)
+        #self.dnd.bindtarget(self.root, 'text/uri-list', '<Drop>', self.add_drag_drop)    
         
         if self.options.ytdl_update:
             self.ytdl.check_for_update()
             self.ytdl_update_messages_loop()
 
-    def shutdown(self):
+    def shutdown(self, *args, **kwargs):
         self.root.quit()
         self.ytdl.quit()
         if self.omx is not None:
             self.omx.stop()
             self.omx.kill()
-
+        self.root.destroy()
 
 # ***************************************
 # MISCELLANEOUS
 # ***************************************
 
-    def edit_options(self):
+    def edit_options(self, *args, **kwargs):
         """edit the options then read them from file"""
         eo = OptionsDialog(self.root, self.options.options_file,_('Edit Options'))
         self.options.read(self.options.options_file)
         self.ytdl.set_options(self.options)
         OMXPlayer.set_omx_location(self.options.omx_location)
 
-    def show_help (self):
-        tkMessageBox.showinfo(_("Help"),
+    def show_help (self, *args, **kwargs):
+        messagebox.showinfo(_("Help"),
           _("To control playing, type a key\np - pause/play\nspacebar - pause/play\nq - quit\n")
         + _("+ - increase volume\n- - decrease volume\nz - tv show info\n1 - reduce speed\no - forward a chapter\n")
         + _("2 - increase speed\nj - previous audio index\nk - next audio index\ni - back a chapter\nn - previous subtitle index\n")
@@ -960,8 +905,8 @@ class TBOPlayer:
         + _("F11 - toggle full screen/windowed mode\n\nFor more help, consult the 'Operation' section of the README file"))
   
 
-    def about (self):
-        tkMessageBox.showinfo(_("About"),_("GUI for omxplayer using jbaiter's pyomxplayer wrapper\n")
+    def about (self, *args, **kwargs):
+        messagebox.showinfo(_("About"),_("GUI for omxplayer using jbaiter's pyomxplayer wrapper\n")
                    +((_("Version dated: %s \nAuthor:\n    Ken Thompson  - KenT2\n")) % datestring)
                    +_("Contributors:\n    eysispeisi\n    heniotierra\n    krugg\n    popiazaza"))
 
@@ -971,45 +916,45 @@ class TBOPlayer:
 
 # Key Press callbacks
 
-    def key_right(self,event):
+    def key_right(self, *args, **kwargs):
         self.send_special('\x1b\x5b\x43')
         self.monitor("Seek forward 30")
 
-    def key_left(self,event):
+    def key_left(self, *args, **kwargs):
         self.send_special('\x1b\x5b\x44')
         self.monitor("Seek back 30")
 
-    def key_shiftright(self,event):
+    def key_shiftright(self, *args, **kwargs):
         self.send_special('\x1b\x5b\x42')
         self.monitor("Seek forward 600")
 
-    def key_shiftleft(self,event):
+    def key_shiftleft(self, *args, **kwargs):
         self.send_special('\x1b\x5b\x41')
         self.monitor("Seek back 600")
 
-    def key_ctrlright(self,event):
+    def key_ctrlright(self, *args, **kwargs):
         self.skip_to_next_track()
 
-    def key_ctrlleft(self,event):
+    def key_ctrlleft(self, *args, **kwargs):
         self.skip_to_previous_track()
 
-    def key_up(self,event):
+    def key_up(self, *args, **kwargs):
         self.select_previous_track()
         
-    def key_down(self,event):
+    def key_down(self, *args, **kwargs):
         self.select_next_track()
 
-    def key_escape(self,event):
+    def key_escape(self, *args, **kwargs):
         self.stop_track()
         
-    def key_return(self,event):
+    def key_return(self, *args, **kwargs):
         self.stop_track()
         def play_aux():
             self.start_track_index = self.playlist.selected_track_index()
             self.play()
         self.root.after(1500, play_aux)
 
-    def key_pressed(self,event):
+    def key_pressed(self, event, **kwargs):
         char = event.char
         if char=='':
             return
@@ -1066,7 +1011,7 @@ class TBOPlayer:
         }
         try:
             allowed_option_values = allowed_options_values[option]
-        except KeyError, er:
+        except KeyError as er:
             raise KeyError("Option " + option + " is invalid")
         option_type = str(type(allowed_option_values))
         if (allowed_option_values == "str" or 
@@ -1139,7 +1084,7 @@ class TBOPlayer:
         self.vprogress_bar_frame.pack(fill=BOTH,side=TOP, expand=True)
         
         #defne response to main window closing
-        self.vprogress_bar_window.protocol ("WM_DELETE_WINDOW", self.vprogress_bar_window.destroy) 
+        self.vprogress_bar_window.wm_protocol("WM_DELETE_WINDOW", self.destroy_vprogress_bar) 
         
         self.vprogress_bar_window.video_height = screenres[1]
         self.vprogress_bar_window.video_width = int(vsize[0] * (screenres[1] / float(vsize[1])))
@@ -1267,7 +1212,7 @@ class TBOPlayer:
         try:
             self.omx.set_video_geometry(0, 0, screenres[0], screenres[1])
             self.vprogress_grip.lower(self.vprogress_bar_frame)
-        except Exception, e:
+        except Exception as e:
             self.monitor('      [!] set_full_screen failed')
             self.monitor(e)
 
@@ -1320,7 +1265,7 @@ class TBOPlayer:
             y2 -= self.vprogress_bar.winfo_height()
         try:
             self.omx.set_video_geometry(x1, y1, x2, y2)
-        except Exception, e:
+        except Exception as e:
                 self.monitor('      [!] move_video failed')
                 self.monitor(e)
         self.focus_root()
@@ -1337,7 +1282,7 @@ class TBOPlayer:
             self.monitor("Failed trying to destroy video window: video window nonexistent.") 
     
     def get_screen_res(self):
-        return (screen_width(), screen_height())
+        return (self.root.winfo_screenwidth(), self.root.winfo_screenheight())
 
     def media_is_video(self):
         return hasattr(self,"omx") and hasattr(self.omx, "video") and len(self.omx.video) > 0
@@ -1442,7 +1387,7 @@ class TBOPlayer:
             elif os.path.isdir(item):
                 self.ajoute(item, False)
 
-    def add_track(self, path=None):
+    def add_track(self, path=None, *args, **kwargs):
         """
         Opens a dialog box to open files,
         then stores the tracks in the playlist.
@@ -1452,12 +1397,12 @@ class TBOPlayer:
             filez = path
         elif self.options.initial_track_dir == '':
             if self.options.last_track_dir != '':
-                filez = tkFileDialog.askopenfilenames(initialdir=self.options.last_track_dir,parent=self.root,title=_('Choose the file(s)'))
+                filez = filedialog.askopenfilenames(initialdir=self.options.last_track_dir,parent=self.root,title=_('Choose the file(s)'))
             else:
-                filez = tkFileDialog.askopenfilenames(parent=self.root,title=_('Choose the file(s)'))
+                filez = filedialog.askopenfilenames(parent=self.root,title=_('Choose the file(s)'))
             
         else:
-            filez = tkFileDialog.askopenfilenames(initialdir=self.options.initial_track_dir,parent=self.root,title=_('Choose the file(s)'))
+            filez = filedialog.askopenfilenames(initialdir=self.options.initial_track_dir,parent=self.root,title=_('Choose the file(s)'))
 
         filez = self.root.tk.splitlist(filez)
 
@@ -1488,11 +1433,11 @@ class TBOPlayer:
 
     def get_dir(self):
         if self.options.initial_track_dir:
-            d = tkFileDialog.askdirectory(initialdir=self.options.initial_track_dir,title=_("Choose a directory"))
+            d = filedialog.askdirectory(initialdir=self.options.initial_track_dir,title=_("Choose a directory"))
         elif self.options.last_track_dir:
-            d = tkFileDialog.askdirectory(initialdir=self.options.last_track_dir,title=_("Choose a directory"))
+            d = filedialog.askdirectory(initialdir=self.options.last_track_dir,title=_("Choose a directory"))
         else:
-            d = tkFileDialog.askdirectory(title=_("Choose a directory"))
+            d = filedialog.askdirectory(title=_("Choose a directory"))
         return d
  
 
@@ -1514,21 +1459,21 @@ class TBOPlayer:
                 return
 
 
-    def add_dir(self):
+    def add_dir(self, *args, **kwargs):
         dirname = self.get_dir()
         if dirname:
             self.options.last_track_dir = dirname
             self.ajoute(dirname,False)
 
 
-    def add_dirs(self):
+    def add_dirs(self, *args, **kwargs):
         dirname = self.get_dir()
         if dirname:
             self.options.last_track_dir = dirname
             self.ajoute(dirname,True)
 
 
-    def add_url(self, *event):
+    def add_url(self, *args, **kwargs):
         cb = ""
         try:
              cb = self.root.clipboard_get()
@@ -1556,7 +1501,7 @@ class TBOPlayer:
         self.track_titles_display.insert(END, name)
         self.playlist.select(self.playlist.length()-1)
 
-    def youtube_search(self):
+    def youtube_search(self, *args, **kwargs):
         def add_url_from_search(link):
             if self.ytdl.is_running(link): return
             if "list=" in link:
@@ -1572,7 +1517,7 @@ class TBOPlayer:
         YoutubeSearchDialog(self.root, add_url_from_search)
 
 
-    def remove_track(self,*event):
+    def remove_track(self, *args, **kwargs):
         if  self.playlist.length()>0 and self.playlist.track_is_selected():
             if self.playlist.selected_track()[1].startswith(self.YTDL_WAIT_TAG) and self.ytdl_state==self._YTDL_WORKING:
                 # tell ytdl_state_machine to stop
@@ -1584,7 +1529,7 @@ class TBOPlayer:
             self.display_time.set("")
 
 
-    def edit_track(self):
+    def edit_track(self, *args, **kwargs):
         if self.playlist.track_is_selected():
             index= self.playlist.selected_track_index()
             d = EditTrackDialog(self.root,_("Edit Track"),
@@ -1605,7 +1550,7 @@ class TBOPlayer:
                     self.go_ytdl(d.result[0])
 
 
-    def select_track(self, event):
+    def select_track(self, event, **kwargs):
         """
         user clicks on a track in the display list so try and select it
         """
@@ -1619,7 +1564,7 @@ class TBOPlayer:
             self.playlist.select(index)
 
 
-    def select_and_play(self, event=None):
+    def select_and_play(self, *args, **kwargs):
         if not hasattr(self, 'select_and_play_pending'):
             self.select_and_play_pending = False
 
@@ -1635,7 +1580,7 @@ class TBOPlayer:
             self.root.after(700, self.select_and_play)
 
 
-    def select_next_track(self):
+    def select_next_track(self, *args, **kwargs):
         if self.playlist.length()>0:
             if self.start_track_index == None and self.play_state == self._OMX_CLOSED: 
                 index = self.start_track_index = self.playlist.selected_track_index()
@@ -1647,14 +1592,14 @@ class TBOPlayer:
             self.display_selected_track(index)
 
 
-    def random_next_track(self):
+    def random_next_track(self, *args, **kwargs):
         if self.playlist.length()>0:
             index = self.start_track_index = randint(0,self.playlist.length()-1)
             self.playlist.select(index)
             self.display_selected_track(index)
 
 
-    def select_previous_track(self):
+    def select_previous_track(self, *args, **kwargs):
         if self.playlist.length()>0:
             if self.start_track_index == None: 
                 index = self.start_track_index = self.playlist.selected_track_index()
@@ -1680,18 +1625,18 @@ class TBOPlayer:
 # PLAYLISTS
 # ***************************************
 
-    def open_list_dialog(self):
+    def open_list_dialog(self, *args, **kwargs):
         """
         opens a saved playlist
         playlists are stored as textfiles each record being "path","title"
         """
         if self.options.initial_playlist_dir=='':
-            self.filename.set(tkFileDialog.askopenfilename(defaultextension = ".csv",
+            self.filename.set(filedialog.askopenfilename(defaultextension = ".csv",
                                                 filetypes = [('csv files', '.csv')],
                                                 multiple=False))
 
         else:
-            self.filename.set(tkFileDialog.askopenfilename(initialdir=self.options.initial_playlist_dir,
+            self.filename.set(filedialog.askopenfilename(initialdir=self.options.initial_playlist_dir,
                                                 defaultextension = ".csv",
                                                 filetypes = [('csv files', '.csv')],
                                                 multiple=False))
@@ -1719,15 +1664,15 @@ class TBOPlayer:
         return
 
 
-    def clear_list(self):
-        if tkMessageBox.askokcancel(_("Clear Playlist"),_("Clear Playlist")):
+    def clear_list(self, *args, **kwargs):
+        if messagebox.askokcancel(_("Clear Playlist"),_("Clear Playlist")):
             self.track_titles_display.delete(0,self.track_titles_display.size())
             self.playlist.clear()
             self.blank_selected_track()
             self.display_time.set("")
 
 
-    def load_youtube_playlist(self):
+    def load_youtube_playlist(self, *args, **kwargs):
         d = LoadYtPlaylistDialog(self.root)
         if not d.result or not "list=" in d.result:
             return
@@ -1736,9 +1681,9 @@ class TBOPlayer:
             self.display_selected_track_title.set(_("Wait. Loading playlist content..."))
 
      
-    def save_list(self):
+    def save_list(self, *args, **kwargs):
         """ save a playlist """
-        self.filename.set(tkFileDialog.asksaveasfilename(
+        self.filename.set(filedialog.asksaveasfilename(
                 defaultextension = ".csv",
                 filetypes = [('csv files', '.csv')]))
         filename = self.filename.get()
@@ -1753,9 +1698,9 @@ class TBOPlayer:
         return
 
     
-    def show_omx_track_info(self):
+    def show_omx_track_info(self, *args, **kwargs):
         try:
-            tkMessageBox.showinfo(_("Track Information"), self.playlist.selected_track()[PlayList.LOCATION]  +"\n\n"+ 
+            messagebox.showinfo(_("Track Information"), self.playlist.selected_track()[PlayList.LOCATION]  +"\n\n"+ 
                                             _("Video: ") + str(self.omx.video) + "\n" +
                                             _("Audio: ") + str(self.omx.audio) + "\n" +
                                             _("Time: ") + str(self.omx.timenf) + "\n" +
@@ -1767,30 +1712,30 @@ class TBOPlayer:
 # OPTIONS DIALOG CLASS
 # ************************************
 
-class OptionsDialog(tkSimpleDialog.Dialog):
+class OptionsDialog(simpledialog.Dialog):
 
     def __init__(self, parent, options_file, title=None, ):
         # store subclass attributes
         self.options_file=options_file
         # init the super class
-        tkSimpleDialog.Dialog.__init__(self, parent, title)
+        simpledialog.Dialog.__init__(self, parent, title)
 
 
     def body(self, master):
-        config=ConfigParser.ConfigParser()
+        config=configparser.ConfigParser()
         config.read(self.options_file)
 
         self._config = config
-        self.geometry_var = config.get('config','geometry',0)
-        self.full_screen_var = config.get('config','full_screen',0)
-        self.windowed_mode_coords_var = config.get('config','windowed_mode_coords',0)
-        self.windowed_mode_resolution_var = config.get('config','windowed_mode_resolution',0)
-        self.autolyrics_coords_var = config.get('config','autolyrics_coords',0)
-        self.ltracks_var = config.get('config','ltracks',0)
+        self.geometry_var = config.get('config','geometry')
+        self.full_screen_var = config.get('config','full_screen')
+        self.windowed_mode_coords_var = config.get('config','windowed_mode_coords')
+        self.windowed_mode_resolution_var = config.get('config','windowed_mode_resolution')
+        self.autolyrics_coords_var = config.get('config','autolyrics_coords')
+        self.ltracks_var = config.get('config','ltracks')
 
         Label(master, text=_("Audio Output:")).grid(row=0, sticky=W)
         self.audio_var=StringVar()
-        self.audio_var.set(config.get('config','audio',0))
+        self.audio_var.set(config.get('config','audio'))
         rb_hdmi=Radiobutton(master, text=_("HDMI"), variable=self.audio_var, value="hdmi")
         rb_hdmi.grid(row=1,column=0,sticky=W)
         rb_local=Radiobutton(master, text=_("Local"), variable=self.audio_var,value="local")
@@ -1803,7 +1748,7 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         Label(master, text="").grid(row=9, sticky=W)
         Label(master, text=_("Mode:")).grid(row=10, sticky=W)
         self.mode_var=StringVar()
-        self.mode_var.set(config.get('config','mode',0))
+        self.mode_var.set(config.get('config','mode'))
         rb_single=Radiobutton(master, text=_("Single"), variable=self.mode_var, value="single")
         rb_single.grid(row=11,column=0,sticky=W)
         rb_repeat=Radiobutton(master, text=_("Repeat"), variable=self.mode_var,value="repeat")
@@ -1818,7 +1763,7 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         Label(master, text="").grid(row=16, sticky=W)
         Label(master, text=_("Download from Youtube:")).grid(row=17, sticky=W)
         self.youtube_media_format_var=StringVar()
-        self.youtube_media_format_var.set(config.get('config','youtube_media_format',0))
+        self.youtube_media_format_var.set(config.get('config','youtube_media_format'))
         rb_video=Radiobutton(master, text=_("Video and audio"), variable=self.youtube_media_format_var, value="mp4")
         rb_video.grid(row=18,column=0,sticky=W)
         rb_audio=Radiobutton(master, text=_("Audio only"), variable=self.youtube_media_format_var, value="m4a")
@@ -1826,33 +1771,33 @@ class OptionsDialog(tkSimpleDialog.Dialog):
 
         Label(master, text=_("Youtube media quality:")).grid(row=20, sticky=W)
         self.youtube_video_quality_var=StringVar()
-        self.youtube_video_quality_var.set(config.get('config','youtube_video_quality',0))
+        self.youtube_video_quality_var.set(config.get('config','youtube_video_quality'))
         om_quality = OptionMenu(master, self.youtube_video_quality_var, "high", "medium", "small")
         om_quality.grid(row=21, sticky=W)
         
         Label(master, text=_("Initial directory for tracks:")).grid(row=0, column=2, sticky=W)
         self.e_tracks = Entry(master)
         self.e_tracks.grid(row=1, column=2)
-        self.e_tracks.insert(0,config.get('config','tracks',0))
+        self.e_tracks.insert(0,config.get('config','tracks'))
         Label(master, text=_("Inital directory for playlists:")).grid(row=2, column=2, sticky=W)
         self.e_playlists = Entry(master)
         self.e_playlists.grid(row=3, column=2)
-        self.e_playlists.insert(0,config.get('config','playlists',0))
+        self.e_playlists.insert(0,config.get('config','playlists'))
     
     
         Label(master, text=_("OMXPlayer location:")).grid(row=10, column=2, sticky=W)
         self.e_omx_location = Entry(master)
         self.e_omx_location.grid(row=11, column=2)
-        self.e_omx_location.insert(0,config.get('config','omx_location',0))
+        self.e_omx_location.insert(0,config.get('config','omx_location'))
         Label(master, text=_("OMXPlayer options:")).grid(row=12, column=2, sticky=W)
         self.e_omx_options = Entry(master)
         self.e_omx_options.grid(row=13, column=2)
-        self.e_omx_options.insert(0,config.get('config','omx_options',0))
+        self.e_omx_options.insert(0,config.get('config','omx_options'))
 
         self.subtitles_var = StringVar()
         self.cb_subtitles = Checkbutton(master,text=_("Subtitles"),variable=self.subtitles_var, onvalue="on",offvalue="off")
         self.cb_subtitles.grid(row=14, column=2, sticky = W)
-        if config.get('config','subtitles',0)=="on":
+        if config.get('config','subtitles')=="on":
             self.cb_subtitles.select()
         else:
             self.cb_subtitles.deselect()
@@ -1861,19 +1806,19 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         Label(master, text=_("youtube-dl location:")).grid(row=17, column=2, sticky=W)
         self.e_ytdl_location = Entry(master)
         self.e_ytdl_location.grid(row=18, column=2)
-        self.e_ytdl_location.insert(0,config.get('config','ytdl_location',0))
+        self.e_ytdl_location.insert(0,config.get('config','ytdl_location'))
         Label(master, text="").grid(row=19, column=2, sticky=W)
 
         Label(master, text=_("Download actual media URL:")).grid(row=20, column=2, sticky=W)
         self.download_media_url_upon_var=StringVar()
-        self.download_media_url_upon_var.set(_("when adding URL") if config.get('config','download_media_url_upon',0) == "add" else _("when playing URL"))
+        self.download_media_url_upon_var.set(_("when adding URL") if config.get('config','download_media_url_upon') == "add" else _("when playing URL"))
         om_download_media = OptionMenu(master, self.download_media_url_upon_var, _("when adding URL"), _("when playing URL"))
         om_download_media.grid(row=21, column=2, sticky=W)
         
         Label(master, text="").grid(row=22, sticky=W) 
         Label(master, text=_("Interface language:")).grid(row=23, column=0, sticky=W)
         self.lang_var=StringVar()
-        self.lang_var.set(config.get('config','lang',0))
+        self.lang_var.set(config.get('config','lang'))
         om_lang = OptionMenu(master, self.lang_var,'en','es','fr','pt','pl','ro','ru')
         om_lang.grid(row=24, column=0, sticky=W)
 
@@ -1881,13 +1826,13 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         Label(master, text="").grid(row=22, sticky=W) 
         Label(master, text=_("Subtitles language:")).grid(row=23, column=2, sticky=W)
         self.subtitles_lang_var=StringVar()
-        self.subtitles_lang_var.set(config.get('config','subtitles_lang',0))
+        self.subtitles_lang_var.set(config.get('config','subtitles_lang'))
         om_lang = OptionMenu(master, self.subtitles_lang_var,'ar','ch','de','en','es','fr','it','ja','ko','pt','pl','ro','ru')
         om_lang.grid(row=24, column=2, sticky=W)
 
 
         self.forbid_windowed_mode_var = IntVar()
-        self.forbid_windowed_mode_var.set(int(config.get('config','forbid_windowed_mode',0)))
+        self.forbid_windowed_mode_var.set(int(config.get('config','forbid_windowed_mode')))
         self.cb_forbid = Checkbutton(master,text=_("Forbid windowed mode"),variable=self.forbid_windowed_mode_var, onvalue=1,offvalue=0)
 
         Label(master, text="").grid(row=51, sticky=W)
@@ -1898,7 +1843,7 @@ class OptionsDialog(tkSimpleDialog.Dialog):
             self.cb_forbid.deselect()
 
         self.cue_track_mode_var = IntVar()
-        self.cue_track_mode_var.set(int(config.get('config','cue_track_mode',0)))
+        self.cue_track_mode_var.set(int(config.get('config','cue_track_mode')))
         self.cb_cue = Checkbutton(master,text=_("Begin/End track paused"),variable=self.cue_track_mode_var, onvalue=1,offvalue=0)
 
         Label(master, text="").grid(row=51, sticky=W)
@@ -1909,7 +1854,7 @@ class OptionsDialog(tkSimpleDialog.Dialog):
             self.cb_cue.deselect()
 
         self.autoplay_var = IntVar()
-        self.autoplay_var.set(int(config.get('config','autoplay',0)))
+        self.autoplay_var.set(int(config.get('config','autoplay')))
         self.cb_autoplay = Checkbutton(master,text=_("Autoplay on start up"), variable=self.autoplay_var, onvalue=1,offvalue=0)
         self.cb_autoplay.grid(row=60,columnspan=2, sticky = W)
         if self.autoplay_var.get()==1:
@@ -1918,7 +1863,7 @@ class OptionsDialog(tkSimpleDialog.Dialog):
             self.cb_autoplay.deselect()
 
         self.ytdl_update_var = IntVar()
-        self.ytdl_update_var.set(int(config.get('config','ytdl_update',0)))
+        self.ytdl_update_var.set(int(config.get('config','ytdl_update')))
         self.cb_ytdl_update = Checkbutton(master, text=_("Keep youtube-dl up-to-date"), variable=self.ytdl_update_var, onvalue=1, offvalue=0)
         self.cb_ytdl_update.grid(row=60,column=2, sticky = W)
         if self.ytdl_update_var.get()==1:
@@ -1929,7 +1874,7 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         self.find_lyrics_var = IntVar()
         self.cb_find_lyrics = Checkbutton(master,text=_("Find lyrics"),variable=self.find_lyrics_var, onvalue=1,offvalue=0)
         self.cb_find_lyrics.grid(row=61,column=0, sticky = W)
-        if int(config.get('config','find_lyrics',0)) == 1:
+        if int(config.get('config','find_lyrics')) == 1:
             self.cb_find_lyrics.select()
         else:
             self.cb_find_lyrics.deselect()	    
@@ -1937,14 +1882,18 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         self.debug_var = StringVar()
         self.cb_debug = Checkbutton(master,text=_("Debug"),variable=self.debug_var, onvalue='on',offvalue='off')
         self.cb_debug.grid(row=61,column=2, sticky = W)
-        if config.get('config','debug',0)=='on':
+        if config.get('config','debug')=='on':
             self.cb_debug.select()
         else:
             self.cb_debug.deselect()
 
         return None    # no initial focus
 
-    def apply(self):
+
+    def cancel(self, *args, **kwargs):
+        self.destroy()
+
+    def apply(self, *args, **kwargs):
         if self.debug_var.get():
             log.setLevel(logging.DEBUG)
         else:
@@ -1956,8 +1905,8 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         """ save the output of the options edit dialog to file"""
         config=self._config
         
-        if (self.lang_var.get() != config.get('config','lang',0)):
-            tkMessageBox.showinfo("",_("Restart TBOplayer to change language"))
+        if (self.lang_var.get() != config.get('config','lang')):
+            messagebox.showinfo("",_("Restart TBOplayer to change language"))
             
         config.set('config','audio',self.audio_var.get())
         config.set('config','subtitles',self.subtitles_var.get())
@@ -1986,16 +1935,16 @@ class OptionsDialog(tkSimpleDialog.Dialog):
         config.set('config','ytdl_update',self.ytdl_update_var.get())
         
         
-        with open(self.options_file, 'wb') as configfile:
+        with open(self.options_file, 'w+') as configfile:
             config.write(configfile)
             configfile.close()
 
 
-# *************************************
+# ************************************
 # EDIT TRACK DIALOG CLASS
 # ************************************
 
-class EditTrackDialog(tkSimpleDialog.Dialog):
+class EditTrackDialog(simpledialog.Dialog):
 
     def __init__(self, parent, title=None, *args):
         #save the extra args to instance variables
@@ -2004,8 +1953,7 @@ class EditTrackDialog(tkSimpleDialog.Dialog):
         self.label_title=args[2]
         self.default_title=args[3]
         #and call the base class _init_which uses the args in body
-        tkSimpleDialog.Dialog.__init__(self, parent, title)
-
+        simpledialog.Dialog.__init__(self, parent, title)
 
     def body(self, master):
         Label(master, text=self.label_location).grid(row=0)
@@ -2022,6 +1970,8 @@ class EditTrackDialog(tkSimpleDialog.Dialog):
 
         return self.field2 # initial focus on title
 
+    def cancel(self, *args, **kwargs):
+        self.destroy()
 
     def apply(self):
         first = self.field1.get()
@@ -2031,19 +1981,18 @@ class EditTrackDialog(tkSimpleDialog.Dialog):
 
 
 
-# *************************************
-# LOAD YOUTUBE PLAYLIST DIALOG
+# ************************************
+# LOAD YOUTUBE PLAYLIST DIALOG CLASS
 # ************************************
 
-class LoadYtPlaylistDialog(tkSimpleDialog.Dialog):
+class LoadYtPlaylistDialog(simpledialog.Dialog):
 
     def __init__(self, parent): 
         #save the extra args to instance variables
         self.label_url="URL"
         self.default_url=""
         #and call the base class _init_which uses the args in body
-        tkSimpleDialog.Dialog.__init__(self, parent, _("Load Youtube playlist"))
-
+        simpledialog.Dialog.__init__(self, parent, _("Load Youtube playlist"))
 
     def body(self, master):
         Label(master, text=self.label_url).grid(row=0)
@@ -2056,6 +2005,8 @@ class LoadYtPlaylistDialog(tkSimpleDialog.Dialog):
 
         return self.field1 # initial focus on title
 
+    def cancel(self, *args, **kwargs):
+        self.destroy()
 
     def apply(self):
         self.result = self.field1.get()
@@ -2063,7 +2014,11 @@ class LoadYtPlaylistDialog(tkSimpleDialog.Dialog):
         return self.result
 
 
-from urllib import quote_plus
+# ************************************
+# YOUTUBE SEARCH DIALOG CLASS
+# ************************************
+
+from six.moves.urllib.parse import quote
 import requests
 
 class YoutubeSearchDialog(Toplevel):
@@ -2098,13 +2053,15 @@ class YoutubeSearchDialog(Toplevel):
                               fg = 'black', wraplength = 100,
                               textvariable=self.page_var,
                               background="light grey").grid(row=0, column=2)
-        page_btn = Button(master, width = 5, height = 1, text = '1 | 2 | 3',
+        page_btn = Button(master, width = 9, height = 1, text = '1 | 2 | 3',
                               foreground='black',background='light grey')
         page_btn.grid(row=1, column=2)
         page_btn.bind("<ButtonRelease-1>", self.search_page)
+        self.page_btn = page_btn
         self.frame = VerticalScrolledFrame(master)
         self.frame.grid(row=2,column=0,columnspan=3,rowspan=6)
         self.frame.configure_scrolling()
+        self.wm_protocol("WM_DELETE_WINDOW", self.cancel)
 
     def search(self, page = 0):
         fvalue = self.field1.get()
@@ -2113,7 +2070,7 @@ class YoutubeSearchDialog(Toplevel):
         self.page_var.set(self.page_lbl + str(page + 1))
         pages = [ "SAD", "SBT", "SCj" ]
         terms = fvalue.decode('latin1').encode('utf8')
-        searchurl = ("https://www.youtube.com/results?search_query=" + quote_plus(terms) + 
+        searchurl = ("https://www.youtube.com/results?search_query=" + quote(terms) + 
                               "&sp=" + pages[page] + "qAwA%253D")
         pagesrc = requests.get(searchurl).text
         parser = YtsearchParser()
@@ -2121,10 +2078,11 @@ class YoutubeSearchDialog(Toplevel):
         self.show_result(parser.result)
 
     def search_page(self, event):
-        wwidth = event.widget.winfo_width()
-        if event.x < wwidth/3:
+        wwidth = self.page_btn.winfo_width()
+        x = int(event[0][8])
+        if x < wwidth/3:
             page = 0
-        elif event.x < 2*(wwidth/3):
+        elif x < 2*(wwidth/3):
             page = 1
         else:
             page = 2
@@ -2146,6 +2104,13 @@ class YoutubeSearchDialog(Toplevel):
     def apply(self):
         return
 
+    def cancel(self, *args, **kwargs):
+        self.destroy()
+
+
+# *************************************
+# YT RESULT CLASS
+# ************************************
 
 class YtresultCell(Frame):
 
@@ -2160,6 +2125,7 @@ class YtresultCell(Frame):
             self.video_name.set(title)
         except: pass
 
+        self.wm_protocol("WM_DELETE_WINDOW", self.cancel)
         self.create_widgets()
 
     def create_widgets(self):
@@ -2176,12 +2142,21 @@ class YtresultCell(Frame):
     def add_link(self,*event):
         self.add_url(self.video_link.get())
 
+    def cancel(self, *args, **kwargs):
+        self.destroy()
+
+
+# *************************************
+# LYRICS CLASS
+# ************************************
 
 class AutoLyrics(Toplevel):
     _ARTIST_TITLE_REXP = re.compile(r"([\w\d.&\\/'` ]*)[-:|~]([\w\d.&\\/'` ]*)", re.UNICODE)
 
     def __init__(self, parent, coords, update_coords_func, track_title):
         Toplevel.__init__(self, parent, background="#d9d9d9")
+        self.wm_protocol("WM_DELETE_WINDOW", self.cancel)
+
         try:
             self.geometry(coords)
         except: 
@@ -2249,38 +2224,6 @@ class AutoLyrics(Toplevel):
         self.lyrics_var.set(_("Unable to retrieve lyrics for this track."))
         self.after(3000, lambda: self.destroy())
 
+    def cancel(self, *args, **kwargs):
+        self.destroy()
 
-# ***************************************
-# MAIN
-# ***************************************
-
-if __name__ == "__main__":
-    datestring="5 Feb 2019"
-
-    dbusif_tboplayer = None
-    try:
-        bus = dbus.SessionBus()
-        bus_object = bus.get_object(TBOPLAYER_DBUS_OBJECT, TBOPLAYER_DBUS_PATH, introspect = False)
-        dbusif_tboplayer = dbus.Interface(bus_object, TBOPLAYER_DBUS_INTERFACE)
-    except: pass
-
-    if dbusif_tboplayer is None:
-        tk.CallWrapper = ExceptionCatcher
-        bplayer = TBOPlayer(options)
-        TBOPlayerDBusInterface(bplayer)
-        gobject_loop = gobject.MainLoop()
-        def refresh_player():
-            try:
-                bplayer.root.update()
-                gobject.timeout_add(66, refresh_player)
-            except: 
-                gobject_loop.quit()
-                bplayer.shutdown()
-        def start_gobject():
-            gobject_loop.run()
-        gobject.timeout_add(66, refresh_player)
-        bplayer.root.after(65, start_gobject)
-        bplayer.root.mainloop()
-    elif len(sys.argv[1:]) > 0:
-        dbusif_tboplayer.openFiles(sys.argv[1:])
-    exit()

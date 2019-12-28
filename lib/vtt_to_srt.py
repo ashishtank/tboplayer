@@ -64,7 +64,7 @@ def fileCreate(strNamaFile, strData):
 		f.writelines(str(strData))
 		f.close()
 		
-	print "file created: " + strNamaFile + "\n"
+	print("file created: " + strNamaFile + "\n")
 	
 	
 	
@@ -72,7 +72,7 @@ def readTextFile(strNamaFile):
 
 	f = open(strNamaFile, mode='r')
 	
-	print "file being read: " + strNamaFile + "\n"
+	print("file being read: " + strNamaFile + "\n")
 	
 	return f.read().decode("utf8").encode('ascii', 'ignore')
 	
@@ -88,7 +88,7 @@ def vtt_to_srt(strNamaFile):
 	
 	strNamaFile = strNamaFile.replace(".vtt",".srt")
 		
-	print strNamaFile
+	print(strNamaFile)
 		
 	fileCreate(strNamaFile, strData)
 	
@@ -117,7 +117,7 @@ def walktree(TopMostPath, callback):
         else:
 		
             # Unknown file type, print a message
-            print 'Skipping %s' % pathname
+            print('Skipping %s' % pathname)
 
 
 def walkdir(TopMostPath, callback):
@@ -153,11 +153,11 @@ def vtts_to_srt(directory, rec = False):
 
 def print_usage():
 
-	print '\nUsage:\tpython vtt_to_srt.py pathname [-r]\n'
+	print('\nUsage:\tpython vtt_to_srt.py pathname [-r]\n')
 	
-	print '\tpathname\t- a file or directory with files to be converted'
+	print('\tpathname\t- a file or directory with files to be converted')
 
-	print '\t-r\t\t- walk path recursively\n'
+	print('\t-r\t\t- walk path recursively\n')
 
 	
 if __name__ == '__main__':

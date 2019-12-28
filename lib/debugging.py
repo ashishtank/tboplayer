@@ -1,6 +1,6 @@
 import sys
 import logging
-import cStringIO
+from io import StringIO
 import traceback
 import dbus
 
@@ -23,7 +23,7 @@ class Logger(logging.Logger):
         self.setLevel(logging.ERROR)
 
     def logException(self):
-        s = cStringIO.StringIO()
+        s = StringIO()
         traceback.print_exc(file=s)
         self.error(s.getvalue())
 
@@ -50,16 +50,15 @@ class ExceptionCatcher:
         self.subst = subst
         self.widget = widget
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
         try:
             if self.subst:
-                args = apply(self.subst, args)
-            return apply(self.func, args)
+                args = self.subst(args)
+                return self.func(args)
+            return self.func()
         except dbus.DBusException:
             pass
-        except SystemExit, msg:
-            raise SystemExit, msg
+        except SystemExit as msg:
+            raise SystemExit(msg)
         except Exception:
             log.logException()
-            sys.exc_clear()
-

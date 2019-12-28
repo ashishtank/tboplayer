@@ -1,4 +1,4 @@
-from Tkinter import (Frame, Scrollbar, Canvas)
+from tkinter import (Frame, Scrollbar, Canvas)
 
 # https://gist.github.com/EugeneBakin/76c8f9bcec5b390e45df
 
