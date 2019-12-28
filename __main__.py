@@ -59,7 +59,7 @@ I think I might have fixed this but two tracks may play at the same time if you 
 import sys
 import os
 import dbus
-from gi.repository import (GObject, GLib)
+from gi.repository import (GLib)
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/lib')
 
