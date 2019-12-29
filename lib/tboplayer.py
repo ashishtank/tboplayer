@@ -33,6 +33,8 @@ datestring = "28 Dec 2019"
 
 options = Options()
 
+tk.CallWrapper = ExceptionCatcher
+
 try:
     gettext.translation('tboplayer', localedir=sys.path[0] + '/locale', languages=[options.lang]).install()
 except:
