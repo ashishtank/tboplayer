@@ -308,7 +308,7 @@ class TBOPlayer:
             self.set_play_button_state(0)
 
 
-    def toggle_pause(self):
+    def toggle_pause(self, *args, **kwargs):
         """pause clicked Pauses or unpauses the track"""
         if self.play_state == self._OMX_PLAYING:
             self.send_command('p')
@@ -330,6 +330,7 @@ class TBOPlayer:
 
 
     def volminusplus(self, event):
+        print(event)
         if int(event[0][8]) < self.minusplus_button.winfo_width()/2:
             self.volminus()
         else:
@@ -985,7 +986,7 @@ class TBOPlayer:
         self.options.geometry = self.root.geometry()
         self.options.save_state()
 
-    def _save_autolyrics_coords(self, *event):
+    def _save_autolyrics_coords(self, event):
         x = self.autolyrics.winfo_x()
         y = self.autolyrics.winfo_y()
         self.options.autolyrics_coords = ("+" if x>=0 else "-")+str(x)+("+" if y>=0 else "-")+str(y)
@@ -1053,9 +1054,9 @@ class TBOPlayer:
     def reset_progress_bar(self):
         self.progress_bar_var.set(0)
 
-    def set_track_position(self,event):
+    def set_track_position(self, event, **kwargs):
         if not self.dbus_connected: return
-        new_track_position = self.progress_bar_step_rate * ((event.x * self.progress_bar_total_steps)/event.widget.winfo_width())
+        new_track_position = self.progress_bar_step_rate * ((event[0][8] * self.progress_bar_total_steps)/self.progress_bar.winfo_width())
         try:
             self.omx.set_position(new_track_position)
         except Exception:
@@ -1135,23 +1136,23 @@ class TBOPlayer:
         self.vprogress_bar_window.protocol ("WM_TAKE_FOCUS", self.focus_root)
         self.vwindow_show_and_hide()
         
-    def vwindow_start_move(self, event):
+    def vwindow_start_move(self, event, **kwargs):
         if self.options.full_screen == 1: return
-        self.vprogress_bar_window.x = event.x
-        self.vprogress_bar_window.y = event.y
+        self.vprogress_bar_window.x = event[0][8]
+        self.vprogress_bar_window.y = event[0][9]
 
-    def vwindow_stop_move(self, event):
+    def vwindow_stop_move(self, event, **kwargs):
         if self.options.full_screen == 1: return
         self.vprogress_bar_window.x = None
         self.vprogress_bar_window.y = None
         self.save_video_window_coordinates()
 
-    def vwindow_motion(self, event):
+    def vwindow_motion(self, event, **kwargs):
         if self.options.full_screen == 1:
             return
         try:
-            deltax = (event.x - self.vprogress_bar_window.x)/2
-            deltay = (event.y - self.vprogress_bar_window.y)/2
+            deltax = (event[0][8] - self.vprogress_bar_window.x)/2
+            deltay = (event[0][9] - self.vprogress_bar_window.y)/2
         except (TypeError, AttributeError):
             log.logException()
             sys.exc_clear()
@@ -1172,14 +1173,14 @@ class TBOPlayer:
                 self.toggle_full_screen()
         self.vwindow_show_and_hide()
 
-    def vwindow_start_resize(self,event):
+    def vwindow_start_resize(self, event, **kwargs):
         if (not self.media_is_video() or 
           self.options.full_screen == 1 or 
           not self.vprogress_bar_window): 
             return
         self.vprogress_bar_window.resizing = 1
 
-    def vwindow_stop_resize(self,event):
+    def vwindow_stop_resize(self, event, **kwargs):
         if (not self.media_is_video() or 
           self.options.full_screen == 1 or 
           not self.vprogress_bar_window): 
@@ -1187,7 +1188,7 @@ class TBOPlayer:
         self.vprogress_bar_window.resizing = 0
         self.save_video_window_coordinates()
 
-    def vwindow_show_and_hide(self, *event):
+    def vwindow_show_and_hide(self, event, **kwargs):
         self.vprogress_bar.lift(self.vprogress_bar_frame)
         if not self.options.full_screen:
             self.vprogress_grip.lift(self.vprogress_bar)
@@ -1208,7 +1209,7 @@ class TBOPlayer:
             self.vprogress_grip.lower(self.vprogress_bar_frame)
             self.move_video(pbar=False)
 
-    def set_full_screen(self,*event):
+    def set_full_screen(self, event):
         if not self.dbus_connected: return
         screenres = self.get_screen_res()
         try:
@@ -1218,7 +1219,7 @@ class TBOPlayer:
             self.monitor('      [!] set_full_screen failed')
             self.monitor(e)
 
-    def toggle_full_screen(self,*event):
+    def toggle_full_screen(self, event, **kwargs):
         hasvbw = hasattr(self, 'vprogress_bar_window')
         if (not self.dbus_connected
             or self.options.forbid_windowed_mode
@@ -1289,11 +1290,11 @@ class TBOPlayer:
     def media_is_video(self):
         return hasattr(self,"omx") and hasattr(self.omx, "video") and len(self.omx.video) > 0
 
-    def restore_window(self, *event):
+    def restore_window(self, event):
         self.root.update()
         self.root.deiconify()
         
-    def focus_root(self, *event):
+    def focus_root(self, event):
         self.root.focus()
 
     def save_video_window_coordinates(self):
@@ -1310,9 +1311,9 @@ class TBOPlayer:
 # VOLUME BAR CALLBACKS
 # ***************************************
 
-    def set_volume_bar(self, event):
+    def set_volume_bar(self, event, **kwargs):
         # new volume ranges from 0 - 60
-        new_volume = (event.x * self.volume_max)/self.volume_bar.winfo_width()
+        new_volume = (event[0][8] * self.volume_max)/self.volume_bar.winfo_width()
         self.set_volume_bar_step(new_volume)
         self.set_volume()
 
@@ -1924,17 +1925,17 @@ class OptionsDialog(simpledialog.Dialog):
         config.set('config','download_media_url_upon',"add" if self.download_media_url_upon_var.get() == _("when adding URL") else "play")
         config.set('config','youtube_video_quality',self.youtube_video_quality_var.get())
         config.set('config','geometry',self.geometry_var)
-        config.set('config','full_screen',self.full_screen_var)
-        config.set('config','windowed_mode_coords',self.windowed_mode_coords_var)
-        config.set('config','windowed_mode_resolution',self.windowed_mode_resolution_var)
-        config.set('config','forbid_windowed_mode',self.forbid_windowed_mode_var.get())
-        config.set('config','cue_track_mode',self.cue_track_mode_var.get())
-        config.set('config','autoplay',self.autoplay_var.get())
-        config.set('config','find_lyrics',self.find_lyrics_var.get())
-        config.set('config','autolyrics_coords',self.autolyrics_coords_var)
-        config.set('config','lang',self.lang_var.get())
-        config.set('config','subtitles_lang',self.subtitles_lang_var.get())
-        config.set('config','ytdl_update',self.ytdl_update_var.get())
+        config.set('config','full_screen',str(self.full_screen_var))
+        config.set('config','windowed_mode_coords',str(self.windowed_mode_coords_var))
+        config.set('config','windowed_mode_resolution',str(self.windowed_mode_resolution_var))
+        config.set('config','forbid_windowed_mode',str(self.forbid_windowed_mode_var.get()))
+        config.set('config','cue_track_mode',str(self.cue_track_mode_var.get()))
+        config.set('config','autoplay',str(self.autoplay_var.get()))
+        config.set('config','find_lyrics',str(self.find_lyrics_var.get()))
+        config.set('config','autolyrics_coords',str(self.autolyrics_coords_var))
+        config.set('config','lang',str(self.lang_var.get()))
+        config.set('config','subtitles_lang',str(self.subtitles_lang_var.get()))
+        config.set('config','ytdl_update',str(self.ytdl_update_var.get()))
         
         
         with open(self.options_file, 'w+') as configfile:
@@ -2141,7 +2142,7 @@ class YtresultCell(Frame):
                               foreground='black', command = self.add_link, 
                               background="light grey").grid(row = 0, column=2, sticky=W)
 
-    def add_link(self,*event):
+    def add_link(self,event):
         self.add_url(self.video_link.get())
 
     def cancel(self, *args, **kwargs):

@@ -123,7 +123,7 @@ class Ytdl:
     def _get_link_media_format(self, url, f):
         return "m4a" if (f == "m4a" and "youtube." in url) else "mp4"
 
-    def _background_process(self, url):
+    def _retrieve_media(self, url):
         process = self._running_processes[url][0]
         while self.is_running(url) and not self._forced_stop:
             try:
@@ -142,23 +142,22 @@ class Ytdl:
                 break
             sleep(1)
 
-    def _spawn_thread(self, url):
+    def _spawn_retrieve_media_thread(self, url):
+        self._running_processes[url] = [process, '']
         self._terminate_sent_signal = False
-        Thread(target=self._background_process, args=[url]).start()
+        Thread(target=self._retrieve_media, args=[url]).start()
 
     def retrieve_media_url(self, url, f):
         if self.is_running(url): return
         ytcmd = self._YTLAUNCH_CMD % (self._get_link_media_format(url, f), url)
         process = pexpect.spawn(ytcmd)
-        self._running_processes[url] = [process, ''] # process, result
-        self._spawn_thread(url)
+        self._spawn_retrieve_media_thread(url)
 
     def retrieve_youtube_playlist(self, url):
         if self.is_running(url): return
         ytcmd = self._YTLAUNCH_PLST_CMD % (url)
         process = pexpect.spawn(ytcmd, timeout=180, maxread=50000, searchwindowsize=50000)
-        self._running_processes[url] = [process, '']
-        self._spawn_thread(url)
+        self._spawn_retrieve_media_thread(url)
  
     def whether_to_use_youtube_dl(self, url): 
         to_use = url[:4] == "http" and any(regxp.match(url) for regxp in self._SERVICES_REGEXPS)

@@ -76,7 +76,8 @@ if __name__ == "__main__":
         bus = dbus.SessionBus()
         bus_object = bus.get_object(TBOPLAYER_DBUS_OBJECT, TBOPLAYER_DBUS_PATH, introspect = False)
         dbusif_tboplayer = dbus.Interface(bus_object, TBOPLAYER_DBUS_INTERFACE)
-    except: pass
+    except:
+        pass
 
     if dbusif_tboplayer is None:
         bplayer = TBOPlayer()
@@ -86,7 +87,7 @@ if __name__ == "__main__":
             try:
                 bplayer.root.update()
                 GLib.timeout_add(66, refresh_player)
-            except: 
+            except:
                 glib_loop.quit()
         def start_glib():
             glib_loop.run()
