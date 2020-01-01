@@ -250,7 +250,7 @@ class TBOPlayer:
 
 
     # respond to asynchrous user input and send signals if necessary
-    def play_track(self, *args, **kwargs):
+    def play_track(self, *args):
         """ respond to user input to play a track, ignore it if already playing
               needs to start playing and not send a signal as it is this that triggers the state machine.
         """
@@ -279,7 +279,7 @@ class TBOPlayer:
         self.root.after(1200, play_after)
 
 
-    def skip_to_next_track(self, *args, **kwargs):
+    def skip_to_next_track(self, *args):
         # send signals to stop and then to play the next track
         if self.play_state == self._OMX_PLAYING:
             self.monitor(">skip  to next received") 
@@ -288,7 +288,7 @@ class TBOPlayer:
             self.play_next_track_signal=True
         
 
-    def skip_to_previous_track(self, *args, **kwargs):
+    def skip_to_previous_track(self, *args):
         # send signals to stop and then to play the previous track
         if self.play_state == self._OMX_PLAYING:
             self.monitor(">skip  to previous received")
@@ -297,7 +297,7 @@ class TBOPlayer:
             self.play_previous_track_signal=True
 
 
-    def stop_track(self, *args, **kwargs):
+    def stop_track(self, *args):
         # send signals to stop and then to break out of any repeat loop
         if self.play_state == self._OMX_PLAYING:
             self.monitor(">stop received")
@@ -308,7 +308,7 @@ class TBOPlayer:
             self.set_play_button_state(0)
 
 
-    def toggle_pause(self, *args, **kwargs):
+    def toggle_pause(self, *args):
         """pause clicked Pauses or unpauses the track"""
         if self.play_state == self._OMX_PLAYING:
             self.send_command('p')
@@ -879,7 +879,7 @@ class TBOPlayer:
             self.ytdl.check_for_update()
             self.ytdl_update_messages_loop()
 
-    def shutdown(self, *args, **kwargs):
+    def shutdown(self, *args):
         self.root.quit()
         self.ytdl.quit()
         if self.omx is not None:
@@ -891,14 +891,14 @@ class TBOPlayer:
 # MISCELLANEOUS
 # ***************************************
 
-    def edit_options(self, *args, **kwargs):
+    def edit_options(self, *args):
         """edit the options then read them from file"""
         eo = OptionsDialog(self.root, self.options.options_file,_('Edit Options'))
         self.options.read(self.options.options_file)
         self.ytdl.set_options(self.options)
         OMXPlayer.set_omx_location(self.options.omx_location)
 
-    def show_help (self, *args, **kwargs):
+    def show_help (self, *args):
         messagebox.showinfo(_("Help"),
           _("To control playing, type a key\np - pause/play\nspacebar - pause/play\nq - quit\n")
         + _("+ - increase volume\n- - decrease volume\nz - tv show info\n1 - reduce speed\no - forward a chapter\n")
@@ -908,7 +908,7 @@ class TBOPlayer:
         + _("F11 - toggle full screen/windowed mode\n\nFor more help, consult the 'Operation' section of the README file"))
   
 
-    def about (self, *args, **kwargs):
+    def about (self, *args):
         messagebox.showinfo(_("About"),_("GUI for omxplayer using jbaiter's pyomxplayer wrapper\n")
                    +((_("Version dated: %s \nAuthor:\n    Ken Thompson  - KenT2\n")) % datestring)
                    +_("Contributors:\n    eysispeisi\n    heniotierra\n    krugg\n    popiazaza"))
@@ -919,45 +919,45 @@ class TBOPlayer:
 
 # Key Press callbacks
 
-    def key_right(self, *args, **kwargs):
+    def key_right(self, *args):
         self.send_special('\x1b\x5b\x43')
         self.monitor("Seek forward 30")
 
-    def key_left(self, *args, **kwargs):
+    def key_left(self, *args):
         self.send_special('\x1b\x5b\x44')
         self.monitor("Seek back 30")
 
-    def key_shiftright(self, *args, **kwargs):
+    def key_shiftright(self, *args):
         self.send_special('\x1b\x5b\x42')
         self.monitor("Seek forward 600")
 
-    def key_shiftleft(self, *args, **kwargs):
+    def key_shiftleft(self, *args):
         self.send_special('\x1b\x5b\x41')
         self.monitor("Seek back 600")
 
-    def key_ctrlright(self, *args, **kwargs):
+    def key_ctrlright(self, *args):
         self.skip_to_next_track()
 
-    def key_ctrlleft(self, *args, **kwargs):
+    def key_ctrlleft(self, *args):
         self.skip_to_previous_track()
 
-    def key_up(self, *args, **kwargs):
+    def key_up(self, *args):
         self.select_previous_track()
         
-    def key_down(self, *args, **kwargs):
+    def key_down(self, *args):
         self.select_next_track()
 
-    def key_escape(self, *args, **kwargs):
+    def key_escape(self, *args):
         self.stop_track()
         
-    def key_return(self, *args, **kwargs):
+    def key_return(self, *args):
         self.stop_track()
         def play_aux():
             self.start_track_index = self.playlist.selected_track_index()
             self.play()
         self.root.after(1500, play_aux)
 
-    def key_pressed(self, event, **kwargs):
+    def key_pressed(self, event):
         char = event.char
         if char=='':
             return
@@ -1054,7 +1054,7 @@ class TBOPlayer:
     def reset_progress_bar(self):
         self.progress_bar_var.set(0)
 
-    def set_track_position(self, event, **kwargs):
+    def set_track_position(self, event):
         if not self.dbus_connected: return
         new_track_position = self.progress_bar_step_rate * ((event[0][8] * self.progress_bar_total_steps)/self.progress_bar.winfo_width())
         try:
@@ -1136,23 +1136,23 @@ class TBOPlayer:
         self.vprogress_bar_window.protocol ("WM_TAKE_FOCUS", self.focus_root)
         self.vwindow_show_and_hide()
         
-    def vwindow_start_move(self, event, **kwargs):
+    def vwindow_start_move(self, event):
         if self.options.full_screen == 1: return
-        self.vprogress_bar_window.x = event[0][8]
-        self.vprogress_bar_window.y = event[0][9]
+        self.vprogress_bar_window.x = int(event[0][8])
+        self.vprogress_bar_window.y = int(event[0][9])
 
-    def vwindow_stop_move(self, event, **kwargs):
+    def vwindow_stop_move(self, event):
         if self.options.full_screen == 1: return
         self.vprogress_bar_window.x = None
         self.vprogress_bar_window.y = None
         self.save_video_window_coordinates()
 
-    def vwindow_motion(self, event, **kwargs):
+    def vwindow_motion(self, event):
         if self.options.full_screen == 1:
             return
         try:
-            deltax = (event[0][8] - self.vprogress_bar_window.x)/2
-            deltay = (event[0][9] - self.vprogress_bar_window.y)/2
+            deltax = (int(event[0][8]) - self.vprogress_bar_window.x)/2
+            deltay = (int(event[0][9]) - self.vprogress_bar_window.y)/2
         except (TypeError, AttributeError):
             log.logException()
             sys.exc_clear()
@@ -1173,14 +1173,14 @@ class TBOPlayer:
                 self.toggle_full_screen()
         self.vwindow_show_and_hide()
 
-    def vwindow_start_resize(self, event, **kwargs):
+    def vwindow_start_resize(self, event):
         if (not self.media_is_video() or 
           self.options.full_screen == 1 or 
           not self.vprogress_bar_window): 
             return
         self.vprogress_bar_window.resizing = 1
 
-    def vwindow_stop_resize(self, event, **kwargs):
+    def vwindow_stop_resize(self, event):
         if (not self.media_is_video() or 
           self.options.full_screen == 1 or 
           not self.vprogress_bar_window): 
@@ -1188,7 +1188,7 @@ class TBOPlayer:
         self.vprogress_bar_window.resizing = 0
         self.save_video_window_coordinates()
 
-    def vwindow_show_and_hide(self, event, **kwargs):
+    def vwindow_show_and_hide(self, event):
         self.vprogress_bar.lift(self.vprogress_bar_frame)
         if not self.options.full_screen:
             self.vprogress_grip.lift(self.vprogress_bar)
@@ -1219,7 +1219,7 @@ class TBOPlayer:
             self.monitor('      [!] set_full_screen failed')
             self.monitor(e)
 
-    def toggle_full_screen(self, event, **kwargs):
+    def toggle_full_screen(self, event):
         hasvbw = hasattr(self, 'vprogress_bar_window')
         if (not self.dbus_connected
             or self.options.forbid_windowed_mode
@@ -1311,9 +1311,9 @@ class TBOPlayer:
 # VOLUME BAR CALLBACKS
 # ***************************************
 
-    def set_volume_bar(self, event, **kwargs):
+    def set_volume_bar(self, event):
         # new volume ranges from 0 - 60
-        new_volume = (event[0][8] * self.volume_max)/self.volume_bar.winfo_width()
+        new_volume = (int(event[0][8]) * self.volume_max)/self.volume_bar.winfo_width()
         self.set_volume_bar_step(new_volume)
         self.set_volume()
 
@@ -1390,7 +1390,7 @@ class TBOPlayer:
             elif os.path.isdir(item):
                 self.ajoute(item, False)
 
-    def add_track(self, path=None, *args, **kwargs):
+    def add_track(self, path=None, *args):
         """
         Opens a dialog box to open files,
         then stores the tracks in the playlist.
@@ -1462,21 +1462,21 @@ class TBOPlayer:
                 return
 
 
-    def add_dir(self, *args, **kwargs):
+    def add_dir(self, *args):
         dirname = self.get_dir()
         if dirname:
             self.options.last_track_dir = dirname
             self.ajoute(dirname,False)
 
 
-    def add_dirs(self, *args, **kwargs):
+    def add_dirs(self, *args):
         dirname = self.get_dir()
         if dirname:
             self.options.last_track_dir = dirname
             self.ajoute(dirname,True)
 
 
-    def add_url(self, *args, **kwargs):
+    def add_url(self, *args):
         cb = ""
         try:
              cb = self.root.clipboard_get()
@@ -1504,7 +1504,7 @@ class TBOPlayer:
         self.track_titles_display.insert(END, name)
         self.playlist.select(self.playlist.length()-1)
 
-    def youtube_search(self, *args, **kwargs):
+    def youtube_search(self, *args):
         def add_url_from_search(link):
             if self.ytdl.is_running(link): return
             if "list=" in link:
@@ -1520,7 +1520,7 @@ class TBOPlayer:
         YoutubeSearchDialog(self.root, add_url_from_search)
 
 
-    def remove_track(self, *args, **kwargs):
+    def remove_track(self, *args):
         if  self.playlist.length()>0 and self.playlist.track_is_selected():
             if self.playlist.selected_track()[1].startswith(self.YTDL_WAIT_TAG) and self.ytdl_state==self._YTDL_WORKING:
                 # tell ytdl_state_machine to stop
@@ -1532,7 +1532,7 @@ class TBOPlayer:
             self.display_time.set("")
 
 
-    def edit_track(self, *args, **kwargs):
+    def edit_track(self, *args):
         if self.playlist.track_is_selected():
             index= self.playlist.selected_track_index()
             d = EditTrackDialog(self.root,_("Edit Track"),
@@ -1553,7 +1553,7 @@ class TBOPlayer:
                     self.go_ytdl(d.result[0])
 
 
-    def select_track(self, event, **kwargs):
+    def select_track(self, event):
         """
         user clicks on a track in the display list so try and select it
         """
@@ -1567,7 +1567,7 @@ class TBOPlayer:
             self.playlist.select(index)
 
 
-    def select_and_play(self, *args, **kwargs):
+    def select_and_play(self, *args):
         if not hasattr(self, 'select_and_play_pending'):
             self.select_and_play_pending = False
 
@@ -1583,7 +1583,7 @@ class TBOPlayer:
             self.root.after(700, self.select_and_play)
 
 
-    def select_next_track(self, *args, **kwargs):
+    def select_next_track(self, *args):
         if self.playlist.length()>0:
             if self.start_track_index == None and self.play_state == self._OMX_CLOSED: 
                 index = self.start_track_index = self.playlist.selected_track_index()
@@ -1595,14 +1595,14 @@ class TBOPlayer:
             self.display_selected_track(index)
 
 
-    def random_next_track(self, *args, **kwargs):
+    def random_next_track(self, *args):
         if self.playlist.length()>0:
             index = self.start_track_index = randint(0,self.playlist.length()-1)
             self.playlist.select(index)
             self.display_selected_track(index)
 
 
-    def select_previous_track(self, *args, **kwargs):
+    def select_previous_track(self, *args):
         if self.playlist.length()>0:
             if self.start_track_index == None: 
                 index = self.start_track_index = self.playlist.selected_track_index()
@@ -1628,7 +1628,7 @@ class TBOPlayer:
 # PLAYLISTS
 # ***************************************
 
-    def open_list_dialog(self, *args, **kwargs):
+    def open_list_dialog(self, *args):
         """
         opens a saved playlist
         playlists are stored as textfiles each record being "path","title"
@@ -1667,7 +1667,7 @@ class TBOPlayer:
         return
 
 
-    def clear_list(self, *args, **kwargs):
+    def clear_list(self, *args):
         if messagebox.askokcancel(_("Clear Playlist"),_("Clear Playlist")):
             self.track_titles_display.delete(0,self.track_titles_display.size())
             self.playlist.clear()
@@ -1675,7 +1675,7 @@ class TBOPlayer:
             self.display_time.set("")
 
 
-    def load_youtube_playlist(self, *args, **kwargs):
+    def load_youtube_playlist(self, *args):
         d = LoadYtPlaylistDialog(self.root)
         if not d.result or not "list=" in d.result:
             return
@@ -1684,7 +1684,7 @@ class TBOPlayer:
             self.display_selected_track_title.set(_("Wait. Loading playlist content..."))
 
      
-    def save_list(self, *args, **kwargs):
+    def save_list(self, *args):
         """ save a playlist """
         self.filename.set(filedialog.asksaveasfilename(
                 defaultextension = ".csv",
@@ -1701,7 +1701,7 @@ class TBOPlayer:
         return
 
     
-    def show_omx_track_info(self, *args, **kwargs):
+    def show_omx_track_info(self, *args):
         try:
             messagebox.showinfo(_("Track Information"), self.playlist.selected_track()[PlayList.LOCATION]  +"\n\n"+ 
                                             _("Video: ") + str(self.omx.video) + "\n" +
@@ -1893,10 +1893,10 @@ class OptionsDialog(simpledialog.Dialog):
         return None    # no initial focus
 
 
-    def cancel(self, *args, **kwargs):
+    def cancel(self, *args):
         self.destroy()
 
-    def apply(self, *args, **kwargs):
+    def apply(self, *args):
         if self.debug_var.get():
             log.setLevel(logging.DEBUG)
         else:
@@ -1973,7 +1973,7 @@ class EditTrackDialog(simpledialog.Dialog):
 
         return self.field2 # initial focus on title
 
-    def cancel(self, *args, **kwargs):
+    def cancel(self, *args):
         self.destroy()
 
     def apply(self):
@@ -2008,7 +2008,7 @@ class LoadYtPlaylistDialog(simpledialog.Dialog):
 
         return self.field1 # initial focus on title
 
-    def cancel(self, *args, **kwargs):
+    def cancel(self, *args):
         self.destroy()
 
     def apply(self):
@@ -2107,7 +2107,7 @@ class YoutubeSearchDialog(Toplevel):
     def apply(self):
         return
 
-    def cancel(self, *args, **kwargs):
+    def cancel(self, *args):
         self.destroy()
 
 
@@ -2145,7 +2145,7 @@ class YtresultCell(Frame):
     def add_link(self,event):
         self.add_url(self.video_link.get())
 
-    def cancel(self, *args, **kwargs):
+    def cancel(self, *args):
         self.destroy()
 
 
@@ -2227,6 +2227,6 @@ class AutoLyrics(Toplevel):
         self.lyrics_var.set(_("Unable to retrieve lyrics for this track."))
         self.after(3000, lambda: self.destroy())
 
-    def cancel(self, *args, **kwargs):
+    def cancel(self, *args):
         self.destroy()
 
