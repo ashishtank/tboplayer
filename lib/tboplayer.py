@@ -958,7 +958,7 @@ class TBOPlayer:
         self.root.after(1500, play_aux)
 
     def key_pressed(self, event):
-        char = event.char
+        char = event[0][10]
         if char=='':
             return
         elif char in ('p', ' ', '.'):
