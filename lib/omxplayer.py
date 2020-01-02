@@ -9,7 +9,7 @@ import pexpect
 import re
 import string
 import dbus
-import gobject
+from gi.repository import GLib
 import sys
 
 from threading import Thread
@@ -171,7 +171,7 @@ class OMXPlayer(object):
 
     def init_dbus_link(self):
         try:
-            gobject.threads_init()
+            GLib.threads_init()
             glib.init_threads()
             dbus_path = "/tmp/omxplayerdbus." + getuser()
             bus = dbus.bus.BusConnection(open(dbus_path).readlines()[0].rstrip())
