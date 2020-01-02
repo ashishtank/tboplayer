@@ -2151,7 +2151,7 @@ class YtresultCell(Frame):
 # ************************************
 
 class AutoLyrics(Toplevel):
-    _ARTIST_TITLE_REXP = re.compile(r"([\w\d.&\\/'` ]*)[-:|~]([\w\d.&\\/'` ]*)", re.UNICODE)
+    _ARTIST_TITLE_REXP = re.compile(r"([\w\d.&\\/'` ]*)[-:|~]([\w\d.&\\/'` ]*)")
 
     def __init__(self, parent, coords, update_coords_func, track_title):
         Toplevel.__init__(self, parent, background="#d9d9d9")
