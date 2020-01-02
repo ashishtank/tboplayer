@@ -1273,7 +1273,7 @@ class TBOPlayer:
                 self.monitor(e)
         self.focus_root()
 
-    def destroy_vprogress_bar(self):
+    def destroy_vprogress_bar(self, *args):
         try:
             if self.options.full_screen == 0:
                 self.save_video_window_coordinates()
@@ -1294,7 +1294,7 @@ class TBOPlayer:
         self.root.update()
         self.root.deiconify()
         
-    def focus_root(self, event):
+    def focus_root(self, *args):
         self.root.focus()
 
     def save_video_window_coordinates(self):
@@ -2144,9 +2144,6 @@ class YtresultCell(Frame):
 
     def add_link(self,event):
         self.add_url(self.video_link.get())
-
-    def cancel(self, *args):
-        self.destroy()
 
 
 # *************************************
