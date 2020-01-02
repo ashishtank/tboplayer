@@ -97,14 +97,14 @@ function addToAptInstall {
     fi
 }
 
-addToAptInstall "python-requests"
-addToAptInstall "python-dbus"
-addToAptInstall "python-tk"
-addToAptInstall "python-pexpect"
-addToAptInstall "python-pip"
+addToAptInstall "python3-requests"
+addToAptInstall "python3-dbus"
+addToAptInstall "python3-tk"
+addToAptInstall "python3-pexpect"
+addToAptInstall "python3-pip"
 addToAptInstall "libav-tools"
-addToAptInstall "libgirara-gtk3-3" 
-addToAptInstall "python-gi"
+addToAptInstall "libgirara-gtk3-3"
+addToAptInstall "python3-gi"
 #addToAptInstall "python-setuptools"
 
 if [ "$aptinstall" != "" ]; then
