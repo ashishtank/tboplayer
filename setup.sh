@@ -47,7 +47,7 @@ if [ "$1" == "uninstall" ]; then
         if [ "$answer" == "Y" ] || [ "$answer" == "y" ]; then
             echo ""
             echo "* Removing TBOPlayer dependencies..."
-            sudo apt-get -y remove libgirara-gtk3-3 python-gi python-dbus python-tk python-gtk2 python-requests python-magic python-pexpect >/dev/null 2>&1
+            sudo apt-get -y remove libgirara-gtk3-3 python3-gi python3-dbus python3-tk python3-gtk2 python3-requests python3-magic python3-pexpect >/dev/null 2>&1
             sudo rm -f /usr/local/bin/youtube-dl >/dev/null 2>&1
         fi
         echo ""
