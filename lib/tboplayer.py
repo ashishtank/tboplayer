@@ -29,11 +29,11 @@ from tkinter import (
     font
 )
 
-datestring = "01 Dec 2020"
+datestring = "20 March 2020"
 
 options = Options()
 
-tk.CallWrapper = ExceptionCatcher
+logger = Logger()
 
 try:
     gettext.translation('tboplayer', localedir=sys.path[0] + '/locale', languages=[options.lang]).install()
@@ -328,10 +328,9 @@ class TBOPlayer:
         elif state == 1:
             self.play_button['text'] = _('Pause')
 
-
     def volminusplus(self, event):
         print(event)
-        if int(event[0][8]) < self.minusplus_button.winfo_width()/2:
+        if int(event.x) < event.widget.winfo_width()/2:
             self.volminus()
         else:
             self.volplus()
@@ -346,7 +345,6 @@ class TBOPlayer:
         minu = int(secs/60)
         sec = secs-(minu*60)
         return str(minu)+":"+str(int(sec))
-
 
     def what_next(self):
         if self.break_required_signal==True:
@@ -451,9 +449,8 @@ class TBOPlayer:
 
                 if not self.ytdl.is_running():
                     self.ytdl_state = self._YTDL_ENDING
-            except Exception:
-                log.logException()
-                sys.exc_clear()
+            except Exception as e:
+                self.monitor(e)
             self.root.after(500, self.ytdl_state_machine)
 
         elif self.ytdl_state == self._YTDL_ENDING:
@@ -468,9 +465,8 @@ class TBOPlayer:
         if res[0] == 1:
             try:
                 result = json.loads(res[1])
-            except Exception:
-                log.logException()
-                sys.exc_clear()
+            except Exception as e:
+                logger.log(e)
                 self.remove_waiting_track(url)
                 return
             if 'entries' in result:
@@ -619,9 +615,8 @@ class TBOPlayer:
                 sleep(0.1)
                 try:
                     self.set_volume_bar_step(int(self.vol2dB(self.omx.volume())+self.volume_normal_step))
-                except Exception:
-                    log.logException()
-                    sys.exc_clear()
+                except Exception as e:
+                    logger.log(e)
                     self.monitor("Failed to set volume bar step")
             return True
         else:
@@ -652,12 +647,9 @@ class TBOPlayer:
 
         # initialise options class and do initial reading/creation of options
         self.options=options
+
         if self.options.debug:
-            log.setLogFile(self.options.log_file)
-            log.enableLogging()
-            self.monitor('started logging to file "%s"' % (self.options.log_file,))
-        else:
-            log.disableLogging()
+            logger.start_logging()
 
         #initialise the play state machine
         self.init_play_state_machine()
@@ -880,6 +872,7 @@ class TBOPlayer:
             self.ytdl_update_messages_loop()
 
     def shutdown(self, *args):
+        logger.end_logging()
         self.root.quit()
         self.ytdl.quit()
         if self.omx is not None:
@@ -913,9 +906,9 @@ class TBOPlayer:
                    +((_("Version dated: %s \nAuthor:\n    Ken Thompson  - KenT2\n")) % datestring)
                    +_("Contributors:\n    eysispeisi\n    heniotierra\n    krugg\n    popiazaza"))
 
-    def monitor(self,text):
+    def monitor(self, err):
         if self.options.debug:
-            log.debug(text)
+            print(err)
 
 # Key Press callbacks
 
@@ -958,7 +951,7 @@ class TBOPlayer:
         self.root.after(1500, play_aux)
 
     def key_pressed(self, event):
-        char = event[0][10]
+        char = event.char
         if char=='':
             return
         elif char in ('p', ' ', '.'):
@@ -1039,9 +1032,8 @@ class TBOPlayer:
     def set_progress_bar(self):
         try:
             self.progress_bar_step_rate = self.omx.timenf['duration']/self.progress_bar_total_steps
-        except Exception:
-            log.logException()
-            sys.exc_clear()
+        except Exception as e:
+            logger.log(e)
             return False
         
 
@@ -1056,21 +1048,19 @@ class TBOPlayer:
 
     def set_track_position(self, event):
         if not self.dbus_connected: return
-        new_track_position = self.progress_bar_step_rate * ((event[0][8] * self.progress_bar_total_steps)/self.progress_bar.winfo_width())
+        new_track_position = self.progress_bar_step_rate * ((event.x * self.progress_bar_total_steps)/self.progress_bar.winfo_width())
         try:
             self.omx.set_position(new_track_position)
-        except Exception:
-            log.logException()
-            sys.exc_clear()
+        except Exception as e:
+            logger.log(e)
             self.monitor("Failed to set track position")
         self.focus_root()
 
     def set_progress_bar_step(self):
         try:
             self.progress_bar_var.set(int((self.omx.position * self.progress_bar_total_steps)/self.omx.timenf['duration']))
-        except Exception:
-            log.logException()
-            sys.exc_clear()
+        except Exception as e:
+            logger.log(e)
             self.monitor('Error trying to set progress bar step')
 
 
@@ -1138,8 +1128,8 @@ class TBOPlayer:
         
     def vwindow_start_move(self, event):
         if self.options.full_screen == 1: return
-        self.vprogress_bar_window.x = int(event[0][8])
-        self.vprogress_bar_window.y = int(event[0][9])
+        self.vprogress_bar_window.x = int(event.x)
+        self.vprogress_bar_window.y = int(event.y)
 
     def vwindow_stop_move(self, event):
         if self.options.full_screen == 1: return
@@ -1151,11 +1141,10 @@ class TBOPlayer:
         if self.options.full_screen == 1:
             return
         try:
-            deltax = (int(event[0][8]) - self.vprogress_bar_window.x)/2
-            deltay = (int(event[0][9]) - self.vprogress_bar_window.y)/2
-        except (TypeError, AttributeError):
-            log.logException()
-            sys.exc_clear()
+            deltax = (int(event.x) - self.vprogress_bar_window.x)/2
+            deltay = (int(event.y) - self.vprogress_bar_window.y)/2
+        except (TypeError, AttributeError) as e:
+            logger.log(e)
             return
         if not self.vprogress_bar_window.resizing:
             x = self.vprogress_bar_window.winfo_x() + deltax
@@ -1166,9 +1155,8 @@ class TBOPlayer:
             h = self.vprogress_bar_window.winfo_height() + deltay
             try:
                 self.vprogress_bar_window.geometry("%sx%s" % (w, h))
-            except Exception:
-                log.logException()
-                sys.exc_clear()
+            except Exception as e:
+                logger.log(e)
                 self.options.full_screen = 1
                 self.toggle_full_screen()
         self.vwindow_show_and_hide()
@@ -1269,8 +1257,8 @@ class TBOPlayer:
         try:
             self.omx.set_video_geometry(x1, y1, x2, y2)
         except Exception as e:
-                self.monitor('      [!] move_video failed')
-                self.monitor(e)
+            self.monitor('      [!] move_video failed')
+            self.monitor(e)
         self.focus_root()
 
     def destroy_vprogress_bar(self, *args):
@@ -1279,9 +1267,8 @@ class TBOPlayer:
                 self.save_video_window_coordinates()
             self.vprogress_bar_window.destroy()
             self.vprogress_bar_window = None
-        except Exception:
-            log.logException()
-            sys.exc_clear()
+        except Exception as e:
+            logger.log(e)
             self.monitor("Failed trying to destroy video window: video window nonexistent.") 
     
     def get_screen_res(self):
@@ -1313,7 +1300,7 @@ class TBOPlayer:
 
     def set_volume_bar(self, event):
         # new volume ranges from 0 - 60
-        new_volume = (int(event[0][8]) * self.volume_max)/self.volume_bar.winfo_width()
+        new_volume = (int(event.x) * self.volume_max)/self.volume_bar.winfo_width()
         self.set_volume_bar_step(new_volume)
         self.set_volume()
 
@@ -1333,9 +1320,8 @@ class TBOPlayer:
         if not self.dbus_connected: return
         try:
             self.omx.volume(self.mB2vol(self.get_mB()))
-        except Exception:
-            log.logException()
-            sys.exc_clear()
+        except Exception as e:
+            logger.log(e)
             return False
 
     def get_mB(self): 
@@ -1456,9 +1442,8 @@ class TBOPlayer:
                     self.file_pieces = self.file.split("/")
                     self.playlist.append([self.file, self.file_pieces[-1],'',''])
                     self.track_titles_display.insert(END, self.file_pieces[-1])
-            except Exception:
-                log.logException()
-                sys.exc_clear()
+            except Exception as e:
+                logger.log(e)
                 return
 
 
@@ -1898,9 +1883,9 @@ class OptionsDialog(simpledialog.Dialog):
 
     def apply(self, *args):
         if self.debug_var.get():
-            log.setLevel(logging.DEBUG)
+            logger.start_logging()
         else:
-            log.disableLogging()
+            logger.end_logging()
         self.save_options()
         return True
 
@@ -2082,7 +2067,7 @@ class YoutubeSearchDialog(Toplevel):
 
     def search_page(self, event):
         wwidth = self.page_btn.winfo_width()
-        x = int(event[0][8])
+        x = int(event.x)
         if x < wwidth/3:
             page = 0
         elif x < 2*(wwidth/3):

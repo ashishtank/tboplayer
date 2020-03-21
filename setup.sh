@@ -1,5 +1,8 @@
 #!/bin/bash
 
+alias python="python3"
+alias pip="pip3"
+
 TBOPLAYER_PATH=/opt/tboplayer
 SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BIN_PATH=/usr/local/bin
@@ -11,7 +14,7 @@ DESKTOP_ENTRIES=($DESKTOP_PATH/tboplayer.desktop
 SUPPORTED_TYPES=('video/x-msvideo' 'video/quicktime' 'video/mp4' 'video/x-flv' 'video/x-matroska' 'audio/x-matroska'
               'video/3gpp' 'audio/x-aac' 'video/h264' 'video/h263' 'video/x-m4v' 'audio/midi'
               'audio/mid' 'audio/vnd.qcelp' 'audio/mpeg' 'video/mpeg' 'audio/rmf' 'audio/x-rmf'
-	      'audio/mp4' 'video/mj2' 'audio/x-tta' 'audio/tta' 'application/mp4' 'audio/ogg'
+	          'audio/mp4' 'video/mj2' 'audio/x-tta' 'audio/tta' 'application/mp4' 'audio/ogg'
               'video/ogg' 'audio/wav' 'audio/wave' 'audio/x-pn-aiff' 'audio/x-pn-wav' 'audio/x-wav'
               'audio/flac' 'audio/x-flac' 'video/h261' 'application/adrift' 'video/3gpp2' 'video/x-f4v'
               'application/ogg' 'audio/mpeg3' 'audio/x-mpeg-3' 'audio/x-gsm' 'audio/x-mpeg' 'audio/mod'
@@ -47,7 +50,8 @@ if [ "$1" == "uninstall" ]; then
         if [ "$answer" == "Y" ] || [ "$answer" == "y" ]; then
             echo ""
             echo "* Removing TBOPlayer dependencies..."
-            sudo apt-get -y remove libgirara-gtk3-3 python3-gi python3-dbus python3-tk python3-gtk2 python3-requests python3-magic python3-pexpect >/dev/null 2>&1
+            pip uninstall python-magic PyGObject six pexpect requests
+            sudo apt-get -y remove python3-requests python3-dbus python3-tk python3-pexpect python3-gi python3-magic python3-pip >/dev/null 2>&1
             sudo rm -f /usr/local/bin/youtube-dl >/dev/null 2>&1
         fi
         echo ""
@@ -101,10 +105,10 @@ addToAptInstall "python3-requests"
 addToAptInstall "python3-dbus"
 addToAptInstall "python3-tk"
 addToAptInstall "python3-pexpect"
-addToAptInstall "python3-pip"
-addToAptInstall "libav-tools"
-addToAptInstall "libgirara-gtk3-3"
 addToAptInstall "python3-gi"
+addToAptInstall "python3-magic"
+addToAptInstall "python3-pip"
+addToAptInstall "ffmpeg"
 #addToAptInstall "python-setuptools"
 
 if [ "$aptinstall" != "" ]; then
@@ -115,25 +119,13 @@ fi
 python -c 'import magic' >/dev/null 2>&1
 if [ $? -eq 1 ]; then
     echo "* Installing magic..."
-    yes | pip install --user python-magic >/dev/null 2>&1
+    yes | pip install --user python-magic PyGObject six pexpect requests >/dev/null 2>&1
 fi
 function installYoutubedl {
     echo "* Installing youtube-dl..."
     sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O $YTDL_EXPECTED_PATH >/dev/null 2>&1
     sudo chmod a+rx $YTDL_EXPECTED_PATH
 }
-
-#dpkg -l tkdnd >/dev/null 2>&1
-#if [ $? -eq 1 ] ; then
-#    echo "* Compiling tkdnd..."
-#    sudo apt-get install -y build-essential tcl-dev tk-dev >/dev/null
-#    wget https://github.com/petasis/tkdnd/tarball/master -O - | tar xz >/dev/null 2>&1
-#    cd petasis-tkdnd-*
-#    ./configure >/dev/null 2>&1
-#    make >/dev/null 2>&1
-#    sudo make install >/dev/null 2>&1
-#    cd ..
-#fi
 
 # install youtube-dl it's if not installed
 YTDL_PATH="$( command -v youtube-dl )"
@@ -189,7 +181,7 @@ done
 echo '[Desktop Entry]' >> $DESKTOP_ENTRY
 echo 'Name=TBOPlayer' >> $DESKTOP_ENTRY
 echo 'Comment=GUI for omxplayer' >> $DESKTOP_ENTRY
-echo 'Exec=python '$TBOPLAYER_PATH' %F' >> $DESKTOP_ENTRY
+echo 'Exec=python '$TBOPLAYER_PATH'/tboplayer.py %F' >> $DESKTOP_ENTRY
 echo 'Icon=/usr/share/pixmaps/python.xpm' >> $DESKTOP_ENTRY
 echo 'Terminal=false' >> $DESKTOP_ENTRY
 echo 'Type=Application' >> $DESKTOP_ENTRY
@@ -218,4 +210,3 @@ echo ""
 echo "Good bye! ;)"
 
 exit
-

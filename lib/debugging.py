@@ -1,64 +1,22 @@
-import sys
-import logging
-from io import StringIO
-import traceback
-import dbus
+from datetime import datetime
 
-class Logger(logging.Logger):
-    log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+class Logger:
+    debug_file = None
 
-    def __init__(self, name, level=logging.INFO, logFile=None):
-        logging.Logger.__init__(self, name, level=logging.INFO)
-        if logFile is not None:
-            self.setLogFile(logFile)
-        log_sh = logging.StreamHandler()
-        log_sh.setLevel(logging.NOTSET)
-        log_sh.setFormatter(self.log_formatter)
-        self.addHandler(log_sh)
+    def start_logging(self):
+        if self.debug_file is None:
+            try:
+                self.debug_file = open("debug.log", "a+")
+            except:
+                print("Cannot open file for debugging.")
 
-    def enableLogging(self):
-        self.setLevel(logging.DEBUG)
+    def end_logging(self):
+        if not self.debug_file is None:
+            self.debug_file.close()
+            self.debug_file = None        
 
-    def disableLogging(self):
-        self.setLevel(logging.ERROR)
-
-    def logException(self):
-        s = StringIO()
-        traceback.print_exc(file=s)
-        self.error(s.getvalue())
-
-    def setLogFile(self, filePath):
-        log_fh = logging.FileHandler(filePath)
-        log_fh.setLevel(logging.ERROR)
-        log_fh.setFormatter(self.log_formatter)
-        self.addHandler(log_fh)
-
-
-# global logger
-log = Logger(__file__)
-
-class ExceptionCatcher:
-    '''
-    Exception handler for Tkinter
-    when set to Tkinter.CallWrapper, catches unhandled exceptions thrown by window elements,
-    logs the exception and signals quit to the erroring window.
-    Exiting tboplayer is preferable when errors occure rather than possibly having
-    uncontrollable omxplayer running in fullscreen.
-    '''
-    def __init__(self, func, subst, widget):
-        self.func = func
-        self.subst = subst
-        self.widget = widget
-
-    def __call__(self, *args, **kwargs):
-        try:
-            if self.subst:
-                args = self.subst(args)
-                return self.func(args)
-            return self.func()
-        except dbus.DBusException:
-            pass
-        except SystemExit as msg:
-            raise SystemExit(msg)
-        except Exception:
-            log.logException()
+    def log(self, msg):
+        if not self.debug_file is None:
+            now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            self.debug_file.write(''.join(['(', now, '): ', str(msg), '\n']))
+            self.debug_file.flush()
