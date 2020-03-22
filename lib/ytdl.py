@@ -41,7 +41,7 @@ class Ytdl:
     
     _SERVICES_REGEXPS = ()
     _ACCEPTED_LINK_REXP_FORMAT = "(http[s]{0,1}://(?:\w|\.{0,1})+%s\.(?:[a-z]{2,3})(?:\.[a-z]{2,3}){0,1}/)"
-    
+
     _running_processes = {}
     finished_processes = {}
         
@@ -61,6 +61,7 @@ class Ytdl:
     subtitle_ready_signal = False
     
     _sudo_password = ''
+    _forced_stop = False
     
     def __init__(self, options, yt_not_found_callback):
         os.system("mount > /dev/null")
@@ -73,7 +74,8 @@ class Ytdl:
         self.compile_regexps()
 
     def compile_regexps(self, updated=False):
-        Thread(target=self._compile_regexps,args=[updated]).start()
+        self._cpthread = Thread(target=self._compile_regexps,args=[updated])
+        self._cpthread.start()
 
     def _compile_regexps(self, updated=False):
         if not os.path.isfile(self._YTLOCATION): return
@@ -121,9 +123,9 @@ class Ytdl:
     def _get_link_media_format(self, url, f):
         return "m4a" if (f == "m4a" and "youtube." in url) else "mp4"
 
-    def _background_process(self, url):
+    def _retrieve_media(self, url):
         process = self._running_processes[url][0]
-        while self.is_running(url):
+        while self.is_running(url) and not self._forced_stop:
             try:
                 index = process.expect([self._FINISHED_STATUS,
                                                 pexpect.TIMEOUT,
@@ -140,23 +142,22 @@ class Ytdl:
                 break
             sleep(1)
 
-    def _spawn_thread(self, url):
+    def _spawn_retrieve_media_thread(self, url):
+        self._running_processes[url] = [process, '']
         self._terminate_sent_signal = False
-        Thread(target=self._background_process, args=[url]).start()
+        Thread(target=self._retrieve_media, args=[url]).start()
 
     def retrieve_media_url(self, url, f):
         if self.is_running(url): return
         ytcmd = self._YTLAUNCH_CMD % (self._get_link_media_format(url, f), url)
         process = pexpect.spawn(ytcmd)
-        self._running_processes[url] = [process, ''] # process, result
-        self._spawn_thread(url)
+        self._spawn_retrieve_media_thread(url)
 
     def retrieve_youtube_playlist(self, url):
         if self.is_running(url): return
         ytcmd = self._YTLAUNCH_PLST_CMD % (url)
         process = pexpect.spawn(ytcmd, timeout=180, maxread=50000, searchwindowsize=50000)
-        self._running_processes[url] = [process, '']
-        self._spawn_thread(url)
+        self._spawn_retrieve_media_thread(url)
  
     def whether_to_use_youtube_dl(self, url): 
         to_use = url[:4] == "http" and any(regxp.match(url) for regxp in self._SERVICES_REGEXPS)
@@ -171,7 +172,7 @@ class Ytdl:
         elif not url:
             return bool(len(self._running_processes))
         process = self._running_processes[url][0]
-        return process is not None and process.isalive()
+        return process is not None and process.is_alive()
 
     def set_options(self, options):
         self._YTLOCATION=options.ytdl_location
@@ -183,10 +184,18 @@ class Ytdl:
         self.has_password_signal = True
 
     def quit(self):
+        self._forced_stop = True
         self._terminate_sent_signal = True
         try:
-            for url in self._running_processes:
-                self._running_processes[url][0].terminate(force=True)
+            if len(self._running_processes.keys()):
+                for url in self._running_processes:
+                    self._running_processes[url][0].terminate(force=True)
+            if self._cpthread and _cpthread.is_alive():
+                self._cpthread.join()
+            if self._cuthread and self._cuthread.is_alive():
+                self._cuthread.join()
+            if self._dsthread and self._dsthread.is_alive():
+                self._dsthread.join()
         except:
             return
 
@@ -202,10 +211,11 @@ class Ytdl:
         ytcmd = self._YTLOCATION + ((self._YTLAUNCH_SUBT_ARGS_FORMAT) % (lang, url, self._YTLAUNCH_SUB_DIR))
         self._subtitled_process = pexpect.spawn(ytcmd)
         self.downloading_subtitle_signal = True
-        Thread(target=self._download_subtitles,args=[lang, url]).start()
+        self._dsthread = Thread(target=self._download_subtitles,args=[lang, url])
+        self._dsthread.start()
         
     def _download_subtitles(self, lang, url, trying = 1):
-        while self.downloading_subtitle_signal:
+        while self.downloading_subtitle_signal and not self._forced_stop:
             try:
                 index = self._subtitled_process.expect([self._FOUND_SUB_STATUS,
                                                 pexpect.EOF,
@@ -226,8 +236,8 @@ class Ytdl:
                         self.download_subtitle_failed_signal = True
                     break
                 sleep(0.2)
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
                 self.download_subtitle_failed_signal = True
                 self.downloading_subtitle_signal = False
                 return
@@ -245,14 +255,15 @@ class Ytdl:
         if not os.path.isfile(self._YTLOCATION):
             return
         self.updating_signal = True
-        Thread(target=self._check_for_update,args=[]).start()
-        
+        self._cuthread = Thread(target=self._check_for_update,args=[])
+        self._cuthread.start()
+
     def _check_for_update(self):
         try:
             versionsurl = "http://rg3.github.io/youtube-dl/update/versions.json"
             versions = json.loads(requests.get(versionsurl).text)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             self.updating_signal = False
             return
 
@@ -262,7 +273,7 @@ class Ytdl:
         if current_version_hash != latest_version_hash:
             self._update_process = pexpect.spawn("sudo %s -U" % self._YTLOCATION, timeout=60)
 
-            while self.updating_signal:
+            while self.updating_signal and not self._forced_stop:
                 try:
                     index = self._update_process.expect([self._UPDATED_STATUS,
                                                     self._SUDO_STATUS,
@@ -290,8 +301,8 @@ class Ytdl:
                             break
                         elif not self.has_password_signal:
                             self.password_requested_signal = True
-                except Exception, e:
-                    print e
+                except Exception as e:
+                    print(e)
                     break
                 sleep(0.5)
             if self.updated_signal:

@@ -67,6 +67,6 @@ class TBOPlayerDBusInterface (Object):
     def setOption(self, option, value):
         try:
             self.tboplayer_instance.set_option(option, value)
-        except Exception, e:
+        except Exception as e:
             raise e
 

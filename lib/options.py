@@ -1,6 +1,6 @@
 import csv
 import os
-import ConfigParser
+import configparser
 
 # ***************************************
 # OPTIONS CLASS
@@ -28,6 +28,15 @@ class Options:
         self.generate_track_info = False  # generate track information from omxplayer output
         self.lang = ""
         self.subtitles_lang = ""
+        self.forbid_windowed_mode = ""
+        self.full_screen = ""
+        self.cue_track_mode = ""
+        self.autoplay = ""
+        self.find_lyrics = ""
+        self.autolyrics_coords = ""
+        self.lang = ""
+        self.subtitles_lang = ""
+        self.ytdl_update = ""
 
         # create an options file if necessary
         confdir = os.path.expanduser("~") + '/.tboplayer'
@@ -46,39 +55,39 @@ class Options:
     
     def read(self,filename):
         """reads options from options file to interface"""
-        config=ConfigParser.ConfigParser()
+        config=configparser.ConfigParser()
         config.read(filename)
         try:
-            self.omx_audio_output = "-o " + config.get('config','audio',0)
-            self.mode = config.get('config','mode',0)
-            self.initial_track_dir = config.get('config','tracks',0)
-            self.last_track_dir = config.get('config','ltracks',0)
-            self.initial_playlist_dir = config.get('config','playlists',0)    
-            self.omx_user_options = config.get('config','omx_options',0)
-            self.youtube_media_format = config.get('config','youtube_media_format',0)
-            self.omx_location = config.get('config','omx_location',0)
-            self.ytdl_location = config.get('config','ytdl_location',0)
-            self.download_media_url_upon = config.get('config','download_media_url_upon',0)
-            self.youtube_video_quality = config.get('config','youtube_video_quality',0)
-            self.geometry = config.get('config','geometry',0)
-            self.full_screen = int(config.get('config','full_screen',0))
-            self.windowed_mode_coords = config.get('config','windowed_mode_coords',0)
-            self.windowed_mode_resolution = config.get('config','windowed_mode_resolution',0)
-            self.forbid_windowed_mode = int(config.get('config','forbid_windowed_mode',0))
-            self.cue_track_mode = int(config.get('config','cue_track_mode',0))
-            self.autoplay = int(config.get('config','autoplay',0))
-            self.find_lyrics = int(config.get('config','find_lyrics',0))
-            self.autolyrics_coords = config.get('config','autolyrics_coords',0)
-            self.lang = config.get('config','lang',0)
-            self.subtitles_lang = config.get('config','subtitles_lang',0)
-            self.ytdl_update = int(config.get('config','ytdl_update',0))
+            self.omx_audio_output = "-o " + config.get('config','audio')
+            self.mode = config.get('config','mode')
+            self.initial_track_dir = config.get('config','tracks')
+            self.last_track_dir = config.get('config','ltracks')
+            self.initial_playlist_dir = config.get('config','playlists')    
+            self.omx_user_options = config.get('config','omx_options')
+            self.youtube_media_format = config.get('config','youtube_media_format')
+            self.omx_location = config.get('config','omx_location')
+            self.ytdl_location = config.get('config','ytdl_location')
+            self.download_media_url_upon = config.get('config','download_media_url_upon')
+            self.youtube_video_quality = config.get('config','youtube_video_quality')
+            self.geometry = config.get('config','geometry')
+            self.full_screen = int(config.get('config','full_screen'))
+            self.windowed_mode_coords = config.get('config','windowed_mode_coords')
+            self.windowed_mode_resolution = config.get('config','windowed_mode_resolution')
+            self.forbid_windowed_mode = int(config.get('config','forbid_windowed_mode'))
+            self.cue_track_mode = int(config.get('config','cue_track_mode'))
+            self.autoplay = int(config.get('config','autoplay'))
+            self.find_lyrics = int(config.get('config','find_lyrics'))
+            self.autolyrics_coords = config.get('config','autolyrics_coords')
+            self.lang = config.get('config','lang')
+            self.subtitles_lang = config.get('config','subtitles_lang')
+            self.ytdl_update = int(config.get('config','ytdl_update'))
 
-            if config.get('config','debug',0) == 'on':
+            if config.get('config','debug') == 'on':
                 self.debug = True
             else:
                 self.debug = False
 
-            if config.get('config','subtitles',0) == 'on':
+            if config.get('config','subtitles') == 'on':
                 self.omx_subtitles = "-t on"
             else:
                 self.omx_subtitles = ""
@@ -88,7 +97,7 @@ class Options:
          
 
     def create(self,filename):
-        config=ConfigParser.ConfigParser()
+        config=configparser.ConfigParser()
         config.add_section('config')
         config.set('config','audio','hdmi')
         config.set('config','subtitles','off')       
@@ -115,12 +124,12 @@ class Options:
         config.set('config','lang','en')
         config.set('config','subtitles_lang','en')
         config.set('config','ytdl_update','1')
-        with open(filename, 'wb') as configfile:
+        with open(filename, 'w+') as configfile:
             config.write(configfile)
             configfile.close()
 
     def save_state(self):
-        config=ConfigParser.ConfigParser()
+        config=configparser.ConfigParser()
         config.add_section('config')
         config.set('config','audio',self.omx_audio_output.replace("-o ",""))
         config.set('config','subtitles',"on" if "on" in self.omx_subtitles else "off")       
@@ -136,18 +145,18 @@ class Options:
         config.set('config','download_media_url_upon',self.download_media_url_upon)
         config.set('config','youtube_video_quality',self.youtube_video_quality)
         config.set('config','geometry',self.geometry)
-        config.set('config','full_screen',self.full_screen)
+        config.set('config','full_screen',str(self.full_screen))
         config.set('config','windowed_mode_coords',self.windowed_mode_coords)
         config.set('config','windowed_mode_resolution',self.windowed_mode_resolution)
-        config.set('config','forbid_windowed_mode',self.forbid_windowed_mode)
-        config.set('config','cue_track_mode',self.cue_track_mode)
-        config.set('config','autoplay',self.autoplay)
-        config.set('config','find_lyrics',self.find_lyrics)
-        config.set('config','autolyrics_coords',self.autolyrics_coords)
-        config.set('config','lang',self.lang)
-        config.set('config','subtitles_lang',self.subtitles_lang)
-        config.set('config','ytdl_update',self.ytdl_update)
-        with open(self.options_file, 'wb') as configfile:
+        config.set('config','forbid_windowed_mode',str(self.forbid_windowed_mode))
+        config.set('config','cue_track_mode',str(self.cue_track_mode))
+        config.set('config','autoplay',str(self.autoplay))
+        config.set('config','find_lyrics',str(self.find_lyrics))
+        config.set('config','autolyrics_coords',str(self.autolyrics_coords))
+        config.set('config','lang',str(self.lang))
+        config.set('config','subtitles_lang',str(self.subtitles_lang))
+        config.set('config','ytdl_update',str(self.ytdl_update))
+        with open(self.options_file, 'w+') as configfile:
             config.write(configfile)
             configfile.close()
 
