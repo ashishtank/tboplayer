@@ -191,6 +191,8 @@ echo 'MimeType='$MIMETS >> $DESKTOP_ENTRY
 sudo cp $DESKTOP_ENTRY "${DESKTOP_ENTRIES[1]}"
 sudo update-desktop-database
 
+cd ~
+
 echo ""
 echoGreen "Installation finished."
 echo ""
