@@ -30,7 +30,7 @@ Install dependencies
 Type this into the terminal to install TBOPlayer's dependencies:
 
         sudo apt-get install -y python3-requests python3-dbus python3-tk python3-pexpect python3-gi python3-magic python3-pip ffmpeg libgirara-gtk3-3
-        yes | pip install --user python-magic PyGObject six pexpect requests 
+        yes | pip3 install --user python-magic PyGObject six pexpect requests 
         sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl
         sudo chmod a+rx /usr/local/bin/youtube-dl
         
