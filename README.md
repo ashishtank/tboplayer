@@ -29,16 +29,11 @@ Install dependencies
 
 Type this into the terminal to install TBOPlayer's dependencies:
 
-        # install pip, gobject, dbus, tk, gtk, requests, avconv, tkdnd
-        sudo apt-get install -y python-pip libgirara-gtk3-3 python-gi python-dbus python-tk python-requests libav-tools
-        # install pexpect, ptyprocess, magic
-        yes | pip install --user pexpect ptyprocess python-magic
-        # install youtube-dl
+        sudo apt-get install -y python3-requests python3-dbus python3-tk python3-pexpect python3-gi python3-magic python3-pip ffmpeg libgirara-gtk3-3
+        yes | pip install --user python-magic PyGObject six pexpect requests 
         sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl
         sudo chmod a+rx /usr/local/bin/youtube-dl
-        # or update youtube-dl
-        sudo youtube-dl -U
-
+        
 Download and Install TBOPlayer
 ------------------------------
 
@@ -52,7 +47,7 @@ Move the resulting directory to /opt:
 
 To run TBOPlayer, type in a terminal window:
 
-        python /opt/tboplayer/tboplayer.py
+        python3 /opt/tboplayer/
 
 TBOPlayer is developed on Raspbian with Python 3.7
 
