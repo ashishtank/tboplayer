@@ -51,6 +51,8 @@ To run TBOPlayer, type in a terminal window:
 
 TBOPlayer is developed on Raspbian with Python 3.7
 
+The Python 2 version can be found here: https://github.com/KenT2/tboplayer/tree/py2_version
+
 OPERATION
 =========
 
