@@ -104,7 +104,7 @@ function addToAptInstall {
 addToAptInstall "python3-requests"
 addToAptInstall "python3-dbus"
 addToAptInstall "python3-tk"
-addToAptInstall "python3-pexpect"
+addToAptInstall "pexpect"
 addToAptInstall "python3-gi"
 addToAptInstall "python3-magic"
 addToAptInstall "python3-pip"
